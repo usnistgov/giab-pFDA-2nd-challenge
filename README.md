@@ -1,18 +1,7 @@
-Repository with code and analysis of the 2nd precisionFDA truth challenge.
+Repository with code and analysis of the 2nd precisionFDA truth challenge, https://precision.fda.gov/challenges/10.
 
-<!--
-# Secondary analysis
-- Use `here` for managing file paths
-- Use `renv` for environment management, https://rstudio.github.io/renv/.
--->
-Notes
------
+Intermediate data files used to generate manuscript figures and tables in `data` and `data-raw` directories along with data descriptors.  
+Rmarkdown files used to generate figures in `analysis` directory, output figures in `figures` directory.
+Pipeline used to calculate challenge input sequencing data in `scripts/coverage_pipeline`.
 
-* Using `git lfs` to track large data files. 
-* Installed using `brew install git-lfs`, following gitlab documentation, https://about.gitlab.com/blog/2017/01/30/getting-started-with-git-lfs-tutorial/.
-
-Issues
-------
-
-1. Make sure correct extended csvs are in the `data-raw` directory.
-2. Make sure the `Truth_metadata.xlsx` is up to date. 
+Please contact Nate Olson, nolson@nist.gov, with any questions about the code or data in this repository.
