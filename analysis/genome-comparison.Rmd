@@ -1,0 +1,235 @@
+---
+title: "Comparison of Benchmarking Results Across GIAB Genomes"
+date: '`r Sys.Date()`'
+output: 
+    bookdown::html_document2:
+        toc: true
+        toc_float: true
+        df_print: paged
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(ggpubr)
+```
+
+# Overview
+Comparison of benchmarking results for the three GIAB genomes to identify 
+potential impact of over training on HG002.
+
+# Approach
+Compare benchmarking results for HG002 to the results for HG003 and HG004 for challenge category stratifications and metrics. 
+
+# Loading and Tidying Data
+```{r}
+## Loading submission metadata
+metadata_df <- read_tsv(here("data-raw","anonymized_metadata_table.tsv"))
+## Loading challenge results
+results_df <- read_tsv(here("data","anonymized_results_by_genome.tsv")) %>% 
+    mutate(phred_F1 = -10*log(1-METRIC.F1_Score)/log(10)) %>% 
+    left_join(metadata_df)
+
+## Calculating F1 difference
+f1_diff <- results_df %>%
+    filter(Type == "SNVandINDEL", challenge_cat == "All Benchmark Regions") %>%
+    mutate(giab_id = str_c("HG00", HG_Num)) %>% 
+    select(ID, Technology, Multi_Details, giab_id, 
+           Submission_Name, caller_cat, Type, 
+           challenge_cat, METRIC.F1_Score) %>% 
+    pivot_wider(names_from =giab_id, values_from = METRIC.F1_Score) %>% 
+    rowwise() %>% 
+    mutate(parents_F1 = exp(mean(log(c(HG003, HG004)))),
+           parents_oneMinus_F1 = exp(mean(log(c(1-HG003, 1-HG004)))),
+           error_rate_ratio = parents_oneMinus_F1/(1- HG002))
+```
+# Results
+- Differences in performance were observed between the unblinded and blinded genomes, HG002 and HG003/4 respectively. 
+- These differences were likely due to training machine learning models and optimizing variant caller parameters on HG002. 
+- ML methods tended to have a large difference in performance between the parents and the son compared to non-ML methods (Fig. \@ref(fig:f1Diff)). 
+- Illumina variant callsets tended to have smaller F1 score differences (Fig. \@ref(fig:f1Diff)). 
+- For the ONT only variant callsets, the parents had higher F1 scores compared to the unblinded son. 
+- The PEPPER ML based variant caller for ONT data did not seem to be impacted by over training as much as other ML based variant callers such as DeepVariant and Clair. 
+- Differences in performance for statistical based variant callers such as GATK tended to be less than ML based methods. These stat methods are more commonly used with Illumina data. This data type and variant caller is more mature. Drop in performance between the blinded and unblinded samples likely due to filter parameters used for the submission that were optimized against HG002.
+- These results highlight the need for multiple benchmark sets and value of mature established datasets and variant calling pipelines.
+
+
+```{r f1Diff, fig.cap =  "Difference in F1 metric between trio parents and HG002."}
+diff_loli_plt <- ggdotchart(f1_diff, x = "ID", y = "error_rate_ratio",
+           color = "caller_cat",                                # Color by groups
+           sorting = "descending",                       # Sort value in descending order
+           add = "segments",                             # Add segments from y = 0 to dots
+           rotate = FALSE,                                # Rotate vertically
+           shape = "Technology",
+           dot.size = 4                                # Large dot size
+           ) + 
+    scale_y_continuous(trans='log2') + 
+    theme_bw() + 
+        theme(axis.text.x = element_blank(), 
+          legend.position = "bottom", legend.box = "bottom") + 
+    scale_color_brewer(type = "qual", palette = 2) + 
+    labs(x = "Submissions", y = "Error Rate Ratio (Parents/HG002)",
+         color = "Variant Caller Category")
+    
+error_rate_scatter <- f1_diff %>%  
+    mutate(phred_F1 = -10*log(1-parents_F1)/log(10)) %>% 
+    ungroup() %>% 
+    ggplot() + 
+    geom_hline(aes(yintercept = 1), color = "grey60") + 
+    geom_point(aes(x = phred_F1, 
+                   y = error_rate_ratio,
+                   shape = Technology,
+                   color = caller_cat)) + 
+    scale_y_continuous(trans='log2') + 
+        scale_color_brewer(type = "qual", palette = 2) + 
+            scale_x_continuous(breaks = c(0, 10, 20, 30), 
+                       labels=c("0","90","99","99.9")) + 
+    theme_bw() + 
+    theme(legend.position = "right", legend.box = "vertical") + 
+    labs(x = "F1 % (log)", y = "Error Rate Ratio (Parents/HG002)",
+         color = "Variant Caller\nCategory",
+         shape = "Technology")
+
+(combined_plt <- ggarrange(diff_loli_plt, 
+                           error_rate_scatter + rremove("ylab"),
+                           labels = "AUTO",
+                           nrow = 1, align = "h", 
+                           legend = "bottom", common.legend = TRUE))
+```
+
+
+
+```{r}
+ggsave(filename = here("figures","genome_comparison.png"), 
+       combined_plt, width = 8, height = 4, dpi = "retina")
+
+ggsave(filename = here("figures","genome_comparison.pdf"), 
+       combined_plt, width = 8, height = 4, dpi = "retina")
+
+```
+
+```{r}
+f1_diff %>% 
+    select(ID, error_rate_ratio, Technology, caller_cat, Submission_Name) %>% 
+    arrange(-error_rate_ratio) %>% 
+    DT::datatable(rownames = FALSE)
+```
+
+```{r}
+f1_diff %>% 
+    filter(caller_cat == "ML",
+           Type == "SNVandINDEL")
+```
+
+Error Rate Ratio Summary Stats
+```{r}
+f1_diff %>% 
+    mutate(ill_comp = if_else(Technology == "ILLUMINA", "ILL", "non-ILL")) %>% 
+    group_by(ill_comp) %>%
+    summarise(med_errr = median(error_rate_ratio),
+              min_errr = min(error_rate_ratio),
+              max_errr = max(error_rate_ratio))
+```
+
+
+```{r}
+f1_diff %>% 
+    filter(caller_cat == "ML",
+           Type == "SNVandINDEL") %>%
+    mutate(ml_comp = case_when(str_detect(Submission_Name, "PEPPER") & Technology == "ONT" ~ "pepper",
+                               TRUE ~ "Other")) %>% 
+    group_by(ml_comp) %>%
+    summarise(med_errr = median(error_rate_ratio),
+              min_errr = min(error_rate_ratio),
+              max_errr = max(error_rate_ratio))
+    
+```
+
+
+# Exploratory plots
+Comparison of SNV and Indel performance between genomes. Larger distance between HG002 and HG003/4 indicates potential over training.
+```{r}
+results_df %>%
+    filter(Type == "SNVandINDEL") %>%
+    mutate(ID = fct_reorder(.f = ID, .x = phred_F1)) %>% 
+    mutate(giab_id = str_c("HG00", HG_Num)) %>% 
+    ggplot() +
+    geom_point(aes(
+        x = ID,
+        y = phred_F1,
+        color = giab_id,
+        shape = caller_cat
+    )) +
+    scale_color_brewer(type = "qual", palette = 2) + 
+    scale_y_continuous(breaks = c(0, 10, 20, 30), 
+                       labels=c("0","90","99","99.9")) + 
+    facet_grid(challenge_cat ~ Technology, scales = "free_x", space = "free_x") +
+    theme_bw() + 
+    theme(axis.text.x = element_blank()) + 
+    labs(x = "Submissions", y = "F1 % (log)", fill = "GIAB ID")
+```
+
+
+```{r}
+f1_diff %>%  
+    ungroup() %>% 
+    mutate(ID = fct_reorder(.f = ID, .x = diff_F1, .desc = TRUE)) %>% 
+    ggplot() + 
+    geom_hline(aes(yintercept = 0)) + 
+        geom_boxplot(aes(x = caller_cat, 
+                   y = diff_F1), outlier.size = -1) + 
+    geom_jitter(aes(x = caller_cat, 
+                   y = diff_F1,
+                   color = Technology,
+                   shape = caller_cat), 
+                width = 0.25) + 
+    scale_y_log10() + 
+        scale_color_brewer(type = "qual", palette = 2) + 
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = 90), 
+          legend.position = "bottom", legend.box = "vertical") + 
+    labs(x = "Submissions", y = "HG002 - Parents (F1)",
+         shape = "Variant Caller Category")
+```
+
+
+```{r}
+f1_diff %>%  
+    ungroup() %>% 
+    mutate(ID = fct_reorder(.f = ID, .x = diff_F1, .desc = TRUE)) %>% 
+    ggplot() + 
+    geom_hline(aes(yintercept = 0)) + 
+        geom_boxplot(aes(x = Technology, 
+                   y = diff_F1)) + 
+    geom_jitter(aes(x = Technology, 
+                   y = diff_F1,
+                   color = Technology,
+                   shape = caller_cat), 
+                width = 0.25) + 
+    scale_y_log10() + 
+        scale_color_brewer(type = "qual", palette = 2) + 
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = 90), 
+          legend.position = "bottom", legend.box = "vertical") + 
+    labs(x = "Submissions", y = "HG002 - Parents (F1)",
+         shape = "Variant Caller Category")
+```
+
+
+
+# Session Information
+## System Information
+```{r}
+sessioninfo::platform_info()
+```
+
+
+## Package Versions
+```{r}
+sessioninfo::package_info() %>% 
+    filter(attached = TRUE) %>% 
+    select(package, loadedversion, date, source) %>%
+    knitr::kable(booktabs = TRUE, row.names = FALSE)
+```

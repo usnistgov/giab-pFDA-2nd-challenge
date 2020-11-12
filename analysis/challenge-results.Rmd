@@ -1,0 +1,276 @@
+---
+title: "pFDA-GIAB 2nd Challenge Results"
+date: '`r Sys.Date()`'
+output: 
+    bookdown::html_document2:
+        toc: true
+        toc_float: true
+        df_print: paged
+        code_folding: hide
+---
+
+```{r message = FALSE}
+library(tidyverse)
+library(readxl)
+library(DT)
+library(sessioninfo)
+library(here)
+library(ggrepel)
+```
+
+# Summary
+Summarize challenge results for identification of winners and reporting overall performance.
+Winners identified for the four technologies and three stratifications based on the genometric mean of the F1 metric scores for the HG003 and HG004 submissions. 
+
+# Loading and tidying data
+
+## Participant metadata
+```{r}
+participant_df <- here("data-raw", "anonymized_metadata_table.tsv") %>% 
+    read_tsv() 
+```
+
+```{r}
+participant_df %>% 
+DT::datatable(caption = "Truth challenge submission metadata.", rownames = FALSE)
+```
+
+## Benchmarking Results
+```{r}
+results_df <- read_tsv(here("data","anonymized_challenge_results_v5.txt")) %>% 
+    mutate(challenge_cat = factor(
+        challenge_cat,
+        levels = c("Difficult-to-Map Regions",
+                   "All Benchmark Regions",
+                   "MHC")
+        )
+    ) %>%
+    ## Adding PhredF1
+    mutate(phred_F1 = -10*log(1-METRIC.F1_Score)/log(10)) %>% 
+    filter(Type == "SNVandINDEL")
+```
+
+```{r}
+results_df %>% 
+    select(`Participant(s)`, Submission_Name, Technology, challenge_cat) %>%
+DT::datatable(caption = "Challenge Results.", rownames = FALSE)
+```
+
+## Assigning Winners
+There are 13 rows in the table, rather than the expected 12 - 4 technologies X 3 stratification, because 2 of Hanying Feng's submissions had the same score. 
+```{r}
+# winners_tbl <- results_df %>% 
+#     group_by(challenge_cat, Technology) %>% 
+#     top_n(1, METRIC.F1_Score)
+# 
+# tied_winner_df <- results_df %>% 
+#     filter(`Participant(s)` == "Mohammad Sahraeian",
+#            Technology == "MULTI",
+#            challenge_cat == "All Benchmark Regions",
+#            Submission_Name == "RN-Illumina-PacBio-ONT")
+# 
+# winners_tbl <- bind_rows(winners_tbl, tied_winner_df) %>% 
+#     select(`Participant(s)`, Technology, challenge_cat, METRIC.F1_Score, Submission_Name) %>% 
+#     mutate(METRIC.F1_Score = round(METRIC.F1_Score, 4)) %>% 
+#     arrange(-METRIC.F1_Score) %>% 
+#     rename(F1 = "METRIC.F1_Score")
+
+
+```
+
+```{r}
+## Saving table with challenge winners to file.
+# winners_tbl %>% 
+#     mutate(Category = paste(challenge_cat, Technology, sep = " - ")) %>% 
+#     ungroup() %>% 
+#     select(Category, `Participant(s)`, Submission_Name, F1) %>% 
+# write_tsv(here("data","challenge_winners.tsv"))
+```
+
+Loading saved winners table
+```{r}
+winners_tbl <- read_tsv(here("data","challenge_winners.tsv"))
+```
+
+```{r}
+winners_tbl %>% DT::datatable(caption = "Challenge Winners", rownames = FALSE)
+```
+
+Checking for honorable mentions: 
+
+- Illumina: clear winner for all categories
+- PacBio: Three of Andrew Carroll's submissions had similar performance (differed in fourth decimal place)
+- ONT: Kishwar lowmap similar for ont (0.964633) and ont_9to6 (0.965146) 
+- Multi: All - Hanying Ill+PacBio (0.998995), Hanying Ill+PacBio+ONT (0.998978), and Mohammad Sahreaian (0.998978) were very close, MHC - Hanying Ill+PacBio+ONT two models were tied (0.997869585420914)
+
+```{r}
+results_df %>% 
+    group_by(challenge_cat, Technology) %>% 
+    mutate(METRIC.F1_Score = round(METRIC.F1_Score, 3)) %>% 
+    top_n(3, METRIC.F1_Score) %>% 
+    select(`Participant(s)`, Technology, challenge_cat, METRIC.F1_Score, Submission_Name) %>% 
+    arrange(-METRIC.F1_Score) %>% 
+    rename(`Genomic Region` = "challenge_cat", F1 = "METRIC.F1_Score") %>% 
+    arrange(Technology, `Genomic Region`, -F1) %>% 
+DT::datatable(caption = "Challenge winners, one winner selected per technology and stratification; All - GIAB 4.2 benchmark regions, MHC - major histocompatibility region, and LowMap - combined 100 bp low mappability and segmental duplications.", rownames = FALSE)
+```
+## Reformatting Winners Table
+```{r}
+(ms_winners_tbl <- winners_tbl %>%
+    separate(Category, c("challenge_cat", "Technology"), sep = " - ") %>%
+    mutate(Submission_Name = if_else(str_detect(Submission_Name, "DRAGEN"),
+                                     "DRAGEN Experimental Extension into Difficult Regions",
+                                     Submission_Name)) %>% 
+    left_join(results_df) %>% 
+    select(Technology, challenge_cat, `Participant(s)`, F1) %>% 
+         mutate(Technology = factor(Technology, 
+                               levels = c("MULTI", "ILLUMINA","PACBIO","ONT"))
+           ) %>%
+    arrange(Technology, challenge_cat) %>% 
+    rename(`Genomic Region` = challenge_cat,
+           Participant = `Participant(s)`) %>% 
+    distinct())
+
+write_csv(ms_winners_tbl, here("figures","ms_winners_tbl.csv"))
+```
+
+
+# Overall Results
+
+```{r }
+## Metric distributions by stratification ########
+dist_plot <- results_df %>% 
+    ggplot() +
+    geom_histogram(aes(x = phred_F1), alpha = 0.5) + 
+    geom_histogram(aes(x = phred_F1, fill = Technology),
+                   color = "grey20",
+                   position = "dodge", na.rm = TRUE) + 
+    facet_wrap(~challenge_cat, ncol = 1) + 
+    scale_fill_brewer(type = "qual", palette = 2) + 
+    scale_x_continuous(breaks = c(0, 10, 20, 30), 
+                       labels=c("0","90","99","99.9")) + 
+    theme_bw() + 
+    labs(x = "F1 % (log)", y = "Count")
+
+
+## Submission Performance #########################
+
+## Adding winners to results df for plot annotation
+results_annotated_df <- winners_tbl %>%
+    separate(Category, c("challenge_cat", "Technology"), sep = " - ") %>%
+    mutate(
+        Submission_Name = if_else(
+            str_detect(Submission_Name, "DRAGEN"),
+            "DRAGEN Experimental Extension into Difficult Regions",
+            Submission_Name
+        ),
+        challenge_cat = factor(
+            challenge_cat,
+            levels = c("Difficult-to-Map Regions",
+                       "All Benchmark Regions",
+                       "MHC")
+        )
+    ) %>%
+    add_column(winners = TRUE) %>%
+    right_join(results_df)
+
+trend_plot <- results_annotated_df %>% 
+    ggplot() +
+    geom_line(
+        aes(
+            x = as.integer(challenge_cat),
+            y = phred_F1,
+            group = Submission_Name,
+            color = Technology
+        ),
+        size = 2,
+        alpha = 0.25
+    ) +
+    geom_point(
+        aes(
+            x = as.integer(challenge_cat),
+            y = phred_F1,
+            fill = Technology
+        ),
+        shape = 21,
+        alpha = 0.5
+    ) +
+    geom_point(
+        data = filter(results_annotated_df, winners),
+        aes(
+            x = as.integer(challenge_cat),
+            y = phred_F1,
+            fill = Technology,
+        ),
+        size = 5,
+        shape = 23,
+        show.legend = FALSE
+    ) +
+    geom_point(
+        data = filter(results_annotated_df, winners),
+        aes(
+            x = as.integer(challenge_cat),
+            y = phred_F1,
+            fill = Technology,
+        ),
+        size = 3,
+        shape = "W",
+        show.legend = FALSE
+    ) +
+    geom_text_repel(
+            data = filter(results_annotated_df, winners),
+            point.padding = 0.25,
+            aes(x = as.integer(challenge_cat),
+                y = phred_F1,
+                label = `Participant(s)`),
+            na.rm = TRUE,
+            min.segment.length = 0.2,
+            size = 3
+        ) +
+    scale_x_continuous(breaks = 1:3,
+                       labels = c("Difficult-to-Map\nRegions",
+                                  "All Benchmark\nRegions",
+                                  "MHC")) +
+    scale_y_continuous(breaks = c(0, 10, 20, 30),
+                       labels=c("0","90","99","99.9")) +
+    scale_fill_brewer(type = "qual", palette = 2) +
+    scale_color_brewer(type = "qual", palette = 2) +
+    theme_bw() +
+    theme(legend.position = "right") +
+    labs(x = "Genomic Regions", y = "F1 % (log)")
+```
+
+## Combined Plot
+```{r}
+(combined_plt <- ggpubr::ggarrange(dist_plot, trend_plot, nrow = 2,
+                  common.legend = TRUE, 
+                  legend = "bottom", labels = "AUTO"))
+```
+
+
+```{r}
+ggsave(filename = here("figures","challenge_results.pdf"), 
+       combined_plt,width = 8, height = 8
+       )
+
+ggsave(filename = here("figures","challenge_results.png"), 
+       combined_plt,width = 8, height = 8
+       )
+```
+
+
+# Session Information
+## System Information
+```{r}
+sessioninfo::platform_info()
+```
+
+
+## Package Versions
+```{r}
+sessioninfo::package_info() %>% 
+    filter(attached = TRUE) %>% 
+    select(package, loadedversion, date, source) %>%
+    knitr::kable(booktabs = TRUE, row.names = FALSE)
+```
+

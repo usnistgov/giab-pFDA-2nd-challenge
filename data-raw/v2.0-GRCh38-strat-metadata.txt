@@ -1,0 +1,128 @@
+Subset	path	strat_id
+GRCh38_notinrefseq_cds.bed.gz	FunctionalRegions/GRCh38_notinrefseq_cds.bed.gz	notin CDS
+GRCh38_refseq_cds.bed.gz	FunctionalRegions/GRCh38_refseq_cds.bed.gz	CDS
+GRCh38_BadPromoters.bed.gz	FunctionalTechnicallyDifficultRegions/GRCh38_BadPromoters.bed.gz	Bad Promoters
+GRCh38_gc15_slop50.bed.gz	GCcontent/GRCh38_gc15_slop50.bed.gz	GC <15
+GRCh38_gc15to20_slop50.bed.gz	GCcontent/GRCh38_gc15to20_slop50.bed.gz	15 < GC < 20
+GRCh38_gc20to25_slop50.bed.gz	GCcontent/GRCh38_gc20to25_slop50.bed.gz	20 < GC < 25
+GRCh38_gc25to30_slop50.bed.gz	GCcontent/GRCh38_gc25to30_slop50.bed.gz	25 < GC < 30
+GRCh38_gc30to55_slop50.bed.gz	GCcontent/GRCh38_gc30to55_slop50.bed.gz	30 < GC < 55
+GRCh38_gc55to60_slop50.bed.gz	GCcontent/GRCh38_gc55to60_slop50.bed.gz	 55 < GC < 60
+GRCh38_gc60to65_slop50.bed.gz	GCcontent/GRCh38_gc60to65_slop50.bed.gz	 60 < GC < 65
+GRCh38_gc65to70_slop50.bed.gz	GCcontent/GRCh38_gc65to70_slop50.bed.gz	65 < GC < 70
+GRCh38_gc70to75_slop50.bed.gz	GCcontent/GRCh38_gc70to75_slop50.bed.gz	 70 < GC < 75
+GRCh38_gc75to80_slop50.bed.gz	GCcontent/GRCh38_gc75to80_slop50.bed.gz	75 < GC < 80
+GRCh38_gc80to85_slop50.bed.gz	GCcontent/GRCh38_gc80to85_slop50.bed.gz	80 < GC < 85
+GRCh38_gc85_slop50.bed.gz	GCcontent/GRCh38_gc85_slop50.bed.gz	GC > 85
+GRCh38_gclt25orgt65_slop50.bed.gz	GCcontent/GRCh38_gclt25orgt65_slop50.bed.gz	"GC <25, GC > 85"
+GRCh38_gclt30orgt55_slop50.bed.gz	GCcontent/GRCh38_gclt30orgt55_slop50.bed.gz	"GC < 30, GC > 55"
+GRCh38_HG001_GIABv3.2.2_compoundhet_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_GIABv3.2.2_compoundhet_slop50.bed.gz	
+GRCh38_HG001_GIABv3.2.2_varswithin50bp.bed.gz	GenomeSpecific/GRCh38_HG001_GIABv3.2.2_varswithin50bp.bed.gz	
+GRCh38_HG001_GIABv3.3.2_comphetindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_GIABv3.3.2_comphetindel10bp_slop50.bed.gz	
+GRCh38_HG001_GIABv3.3.2_comphetsnp10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_GIABv3.3.2_comphetsnp10bp_slop50.bed.gz	
+GRCh38_HG001_GIABv3.3.2_complexandSVs.bed.gz	GenomeSpecific/GRCh38_HG001_GIABv3.3.2_complexandSVs.bed.gz	
+GRCh38_HG001_GIABv3.3.2_complexindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_GIABv3.3.2_complexindel10bp_slop50.bed.gz	
+GRCh38_HG001_GIABv3.3.2_RTG_PG_v3.3.2_SVs_alldifficultregions.bed.gz	GenomeSpecific/GRCh38_HG001_GIABv3.3.2_RTG_PG_v3.3.2_SVs_alldifficultregions.bed.gz	
+GRCh38_HG001_GIABv3.3.2_RTG_PG_v3.3.2_SVs_notin_alldifficultregions.bed.gz	GenomeSpecific/GRCh38_HG001_GIABv3.3.2_RTG_PG_v3.3.2_SVs_notin_alldifficultregions.bed.gz	
+GRCh38_HG001_GIABv3.3.2_snpswithin10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_GIABv3.3.2_snpswithin10bp_slop50.bed.gz	
+GRCh38_HG001_PacBio_MetaSV.bed.gz	GenomeSpecific/GRCh38_HG001_PacBio_MetaSV.bed.gz	
+GRCh38_HG001_PG2016-1.0_comphetindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_PG2016-1.0_comphetindel10bp_slop50.bed.gz	
+GRCh38_HG001_PG2016-1.0_comphetsnp10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_PG2016-1.0_comphetsnp10bp_slop50.bed.gz	
+GRCh38_HG001_PG2016-1.0_complexindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_PG2016-1.0_complexindel10bp_slop50.bed.gz	
+GRCh38_HG001_PG2016-1.0_snpswithin10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_PG2016-1.0_snpswithin10bp_slop50.bed.gz	
+GRCh38_HG001_RTG_37.7.3_comphetindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_RTG_37.7.3_comphetindel10bp_slop50.bed.gz	
+GRCh38_HG001_RTG_37.7.3_comphetsnp10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_RTG_37.7.3_comphetsnp10bp_slop50.bed.gz	
+GRCh38_HG001_RTG_37.7.3_complexindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_RTG_37.7.3_complexindel10bp_slop50.bed.gz	
+GRCh38_HG001_RTG_37.7.3_snpswithin10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG001_RTG_37.7.3_snpswithin10bp_slop50.bed.gz	
+GRCh38_HG002_expanded_150__Tier1plusTier2_v0.6.1.bed.gz	GenomeSpecific/GRCh38_HG002_expanded_150__Tier1plusTier2_v0.6.1.bed.gz	
+GRCh38_HG002_GIABv3.2.2_compoundhet_slop50.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv3.2.2_compoundhet_slop50.bed.gz	
+GRCh38_HG002_GIABv3.2.2_varswithin50bp.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv3.2.2_varswithin50bp.bed.gz	
+GRCh38_HG002_GIABv3.3.2_comphetindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv3.3.2_comphetindel10bp_slop50.bed.gz	
+GRCh38_HG002_GIABv3.3.2_comphetsnp10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv3.3.2_comphetsnp10bp_slop50.bed.gz	
+GRCh38_HG002_GIABv3.3.2_complexandSVs_alldifficultregions.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv3.3.2_complexandSVs_alldifficultregions.bed.gz	
+GRCh38_HG002_GIABv3.3.2_complexandSVs.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv3.3.2_complexandSVs.bed.gz	
+GRCh38_HG002_GIABv3.3.2_complexindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv3.3.2_complexindel10bp_slop50.bed.gz	
+GRCh38_HG002_GIABv3.3.2_notin_complexandSVs_alldifficultregions.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv3.3.2_notin_complexandSVs_alldifficultregions.bed.gz	
+GRCh38_HG002_GIABv3.3.2_snpswithin10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv3.3.2_snpswithin10bp_slop50.bed.gz	
+GRCh38_HG002_GIABv4.1_CNV_CCSandONT_elliptical_outlier.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_CNV_CCSandONT_elliptical_outlier.bed.gz	
+GRCh38_HG002_GIABv4.1_CNV_gt2assemblycontigs_ONTCanu_ONTFlye_CCSCanu.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_CNV_gt2assemblycontigs_ONTCanu_ONTFlye_CCSCanu.bed.gz	
+GRCh38_HG002_GIABv4.1_CNV_mrcanavarIllumina_CCShighcov_ONThighcov_intersection.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_CNV_mrcanavarIllumina_CCShighcov_ONThighcov_intersection.bed.gz	
+GRCh38_HG002_GIABv4.1_CNVsandSVs.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_CNVsandSVs.bed.gz	
+GRCh38_HG002_GIABv4.1_comphetindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_comphetindel10bp_slop50.bed.gz	
+GRCh38_HG002_GIABv4.1_comphetsnp10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_comphetsnp10bp_slop50.bed.gz	
+GRCh38_HG002_GIABv4.1_complexandSVs_alldifficultregions.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_complexandSVs_alldifficultregions.bed.gz	
+GRCh38_HG002_GIABv4.1_complexandSVs.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_complexandSVs.bed.gz	
+GRCh38_HG002_GIABv4.1_complexindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_complexindel10bp_slop50.bed.gz	
+GRCh38_HG002_GIABv4.1_inversions_slop25percent.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_inversions_slop25percent.bed.gz	
+GRCh38_HG002_GIABv4.1_notin_complexandSVs_alldifficultregions.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_notin_complexandSVs_alldifficultregions.bed.gz	
+GRCh38_HG002_GIABv4.1_othercomplexwithin10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_othercomplexwithin10bp_slop50.bed.gz	
+GRCh38_HG002_GIABv4.1_snpswithin10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG002_GIABv4.1_snpswithin10bp_slop50.bed.gz	
+GRCh38_HG002_HG003_HG004_allsvs.bed.gz	GenomeSpecific/GRCh38_HG002_HG003_HG004_allsvs.bed.gz	
+GRCh38_HG002_Tier1plusTier2_v0.6.1.bed.gz	GenomeSpecific/GRCh38_HG002_Tier1plusTier2_v0.6.1.bed.gz	
+GRCh38_HG003_GIABv3.3.2_comphetindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG003_GIABv3.3.2_comphetindel10bp_slop50.bed.gz	
+GRCh38_HG003_GIABv3.3.2_comphetsnp10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG003_GIABv3.3.2_comphetsnp10bp_slop50.bed.gz	
+GRCh38_HG003_GIABv3.3.2_complexandSVs_alldifficultregions.bed.gz	GenomeSpecific/GRCh38_HG003_GIABv3.3.2_complexandSVs_alldifficultregions.bed.gz	
+GRCh38_HG003_GIABv3.3.2_complexandSVs.bed.gz	GenomeSpecific/GRCh38_HG003_GIABv3.3.2_complexandSVs.bed.gz	
+GRCh38_HG003_GIABv3.3.2_complexindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG003_GIABv3.3.2_complexindel10bp_slop50.bed.gz	
+GRCh38_HG003_GIABv3.3.2_notin_complexandSVs_alldifficultregions.bed.gz	GenomeSpecific/GRCh38_HG003_GIABv3.3.2_notin_complexandSVs_alldifficultregions.bed.gz	
+GRCh38_HG003_GIABv3.3.2_snpswithin10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG003_GIABv3.3.2_snpswithin10bp_slop50.bed.gz	
+GRCh38_HG004_GIABv3.3.2_comphetindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG004_GIABv3.3.2_comphetindel10bp_slop50.bed.gz	
+GRCh38_HG004_GIABv3.3.2_comphetsnp10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG004_GIABv3.3.2_comphetsnp10bp_slop50.bed.gz	
+GRCh38_HG004_GIABv3.3.2_complexandSVs_alldifficultregions.bed.gz	GenomeSpecific/GRCh38_HG004_GIABv3.3.2_complexandSVs_alldifficultregions.bed.gz	
+GRCh38_HG004_GIABv3.3.2_complexandSVs.bed.gz	GenomeSpecific/GRCh38_HG004_GIABv3.3.2_complexandSVs.bed.gz	
+GRCh38_HG004_GIABv3.3.2_complexindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG004_GIABv3.3.2_complexindel10bp_slop50.bed.gz	
+GRCh38_HG004_GIABv3.3.2_notin_complexandSVs_alldifficultregions.bed.gz	GenomeSpecific/GRCh38_HG004_GIABv3.3.2_notin_complexandSVs_alldifficultregions.bed.gz	
+GRCh38_HG004_GIABv3.3.2_snpswithin10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG004_GIABv3.3.2_snpswithin10bp_slop50.bed.gz	
+GRCh38_HG005_GIABv3.3.2_comphetindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG005_GIABv3.3.2_comphetindel10bp_slop50.bed.gz	
+GRCh38_HG005_GIABv3.3.2_comphetsnp10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG005_GIABv3.3.2_comphetsnp10bp_slop50.bed.gz	
+GRCh38_HG005_GIABv3.3.2_complexandSVs_alldifficultregions.bed.gz	GenomeSpecific/GRCh38_HG005_GIABv3.3.2_complexandSVs_alldifficultregions.bed.gz	
+GRCh38_HG005_GIABv3.3.2_complexandSVs.bed.gz	GenomeSpecific/GRCh38_HG005_GIABv3.3.2_complexandSVs.bed.gz	
+GRCh38_HG005_GIABv3.3.2_complexindel10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG005_GIABv3.3.2_complexindel10bp_slop50.bed.gz	
+GRCh38_HG005_GIABv3.3.2_notin_complexandSVs_alldifficultregions.bed.gz	GenomeSpecific/GRCh38_HG005_GIABv3.3.2_notin_complexandSVs_alldifficultregions.bed.gz	
+GRCh38_HG005_GIABv3.3.2_snpswithin10bp_slop50.bed.gz	GenomeSpecific/GRCh38_HG005_GIABv3.3.2_snpswithin10bp_slop50.bed.gz	
+GRCh38_HG005_HG006_HG007_MetaSV_allsvs.bed.gz	GenomeSpecific/GRCh38_HG005_HG006_HG007_MetaSV_allsvs.bed.gz	
+GRCh38_AllHomopolymers_gt6bp_imperfectgt10bp_slop5.bed.gz	LowComplexity/GRCh38_AllHomopolymers_gt6bp_imperfectgt10bp_slop5.bed.gz	All Homopol
+GRCh38_AllTandemRepeats_201to10000bp_slop5.bed.gz	LowComplexity/GRCh38_AllTandemRepeats_201to10000bp_slop5.bed.gz	TR 201bp - 10kb
+GRCh38_AllTandemRepeats_51to200bp_slop5.bed.gz	LowComplexity/GRCh38_AllTandemRepeats_51to200bp_slop5.bed.gz	TR 51 - 200bp
+GRCh38_AllTandemRepeats_gt10000bp_slop5.bed.gz	LowComplexity/GRCh38_AllTandemRepeats_gt10000bp_slop5.bed.gz	TR >10kb
+GRCh38_AllTandemRepeats_gt100bp_slop5.bed.gz	LowComplexity/GRCh38_AllTandemRepeats_gt100bp_slop5.bed.gz	TR >100bp
+GRCh38_AllTandemRepeats_lt51bp_slop5.bed.gz	LowComplexity/GRCh38_AllTandemRepeats_lt51bp_slop5.bed.gz	TR < 51bp
+GRCh38_AllTandemRepeatsandHomopolymers_slop5.bed.gz	LowComplexity/GRCh38_AllTandemRepeatsandHomopolymers_slop5.bed.gz	TR and Homopol
+GRCh38_notinAllHomopolymers_gt6bp_imperfectgt10bp_slop5.bed.gz	LowComplexity/GRCh38_notinAllHomopolymers_gt6bp_imperfectgt10bp_slop5.bed.gz	notin Homopol
+GRCh38_notinAllTandemRepeatsandHomopolymers_slop5.bed.gz	LowComplexity/GRCh38_notinAllTandemRepeatsandHomopolymers_slop5.bed.gz	notin TR and Homopol
+GRCh38_SimpleRepeat_diTR_11to50_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_diTR_11to50_slop5.bed.gz	diTR 11-50 bp
+GRCh38_SimpleRepeat_diTR_51to200_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_diTR_51to200_slop5.bed.gz	diTR 51-200bp
+GRCh38_SimpleRepeat_diTR_gt200_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_diTR_gt200_slop5.bed.gz	diTR >200bp
+GRCh38_SimpleRepeat_homopolymer_4to6_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_homopolymer_4to6_slop5.bed.gz	Homopol 4-6 bp
+GRCh38_SimpleRepeat_homopolymer_7to11_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_homopolymer_7to11_slop5.bed.gz	Homopol 7-10bp
+GRCh38_SimpleRepeat_homopolymer_gt11_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_homopolymer_gt11_slop5.bed.gz	Homopol >11bp
+GRCh38_SimpleRepeat_imperfecthomopolgt10_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_imperfecthomopolgt10_slop5.bed.gz	Imp Homopol >10
+GRCh38_SimpleRepeat_quadTR_20to50_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_quadTR_20to50_slop5.bed.gz	quadTR 20-50bp
+GRCh38_SimpleRepeat_quadTR_51to200_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_quadTR_51to200_slop5.bed.gz	quadTR 51-200bp
+GRCh38_SimpleRepeat_quadTR_gt200_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_quadTR_gt200_slop5.bed.gz	quadTR >200bp
+GRCh38_SimpleRepeat_triTR_15to50_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_triTR_15to50_slop5.bed.gz	triTR 15-50bp
+GRCh38_SimpleRepeat_triTR_51to200_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_triTR_51to200_slop5.bed.gz	triTR 51-200bp
+GRCh38_SimpleRepeat_triTR_gt200_slop5.bed.gz	LowComplexity/GRCh38_SimpleRepeat_triTR_gt200_slop5.bed.gz	triTR >200bp
+GRCh38_lowmappabilityall.bed.gz	mappability/GRCh38_lowmappabilityall.bed.gz	lowmap
+GRCh38_nonunique_l100_m2_e1.bed.gz	mappability/GRCh38_nonunique_l100_m2_e1.bed.gz	nonuniuqe l100m2e1
+GRCh38_nonunique_l250_m0_e0.bed.gz	mappability/GRCh38_nonunique_l250_m0_e0.bed.gz	nonuniuqe l250m0e0
+GRCh38_notinlowmappabilityall.bed.gz	mappability/GRCh38_notinlowmappabilityall.bed.gz	notin lowmap
+GRCh38_allOtherDifficultregions.bed.gz	OtherDifficult/GRCh38_allOtherDifficultregions.bed.gz	Other Diff
+GRCh38_contigs_lt500kb.bed.gz	OtherDifficult/GRCh38_contigs_lt500kb.bed.gz	Contigs <500kb
+GRCh38_gaps_slop15kb.bed.gz	OtherDifficult/GRCh38_gaps_slop15kb.bed.gz	Gaps
+GRCh38_L1H_gt500.bed.gz	OtherDifficult/GRCh38_L1H_gt500.bed.gz	L1H
+GRCh38_MHC.bed.gz	OtherDifficult/GRCh38_MHC.bed.gz	MHC
+GRCh38_VDJ.bed.gz	OtherDifficult/GRCh38_VDJ.bed.gz	VDJ
+GRCh38_chainSelf_gt10kb.bed.gz	SegmentalDuplications/GRCh38_chainSelf_gt10kb.bed.gz	chainSelf >10kb
+GRCh38_chainSelf.bed.gz	SegmentalDuplications/GRCh38_chainSelf.bed.gz	chainSelf
+GRCh38_gt5segdups_gt10kb_gt99percidentity.bed.gz	SegmentalDuplications/GRCh38_gt5segdups_gt10kb_gt99percidentity.bed.gz	High Coverage SegDups
+GRCh38_notinchainSelf_gt10kb.bed.gz	SegmentalDuplications/GRCh38_notinchainSelf_gt10kb.bed.gz	notin chainSelf >10kb
+GRCh38_notinchainSelf.bed.gz	SegmentalDuplications/GRCh38_notinchainSelf.bed.gz	notin chainSelf
+GRCh38_notinsegdups_gt10kb.bed.gz	SegmentalDuplications/GRCh38_notinsegdups_gt10kb.bed.gz	notin High Coverage SegDups
+GRCh38_notinsegdups.bed.gz	SegmentalDuplications/GRCh38_notinsegdups.bed.gz	notin SegDups
+GRCh38_segdups_gt10kb.bed.gz	SegmentalDuplications/GRCh38_segdups_gt10kb.bed.gz	SegDups > 10kb
+GRCh38_segdups.bed.gz	SegmentalDuplications/GRCh38_segdups.bed.gz	SegDups
+GRCh38_alldifficultregions.bed.gz	union/GRCh38_alldifficultregions.bed.gz	All Difficult
+GRCh38_alllowmapandsegdupregions.bed.gz	union/GRCh38_alllowmapandsegdupregions.bed.gz	lowmap and segdups
+GRCh38_notinalldifficultregions.bed.gz	union/GRCh38_notinalldifficultregions.bed.gz	notin All Difficult
+GRCh38_notinalllowmapandsegdupregions.bed.gz	union/GRCh38_notinalllowmapandsegdupregions.bed.gz	notin lowmap and segDups

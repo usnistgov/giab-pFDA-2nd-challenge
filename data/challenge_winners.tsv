@@ -1,0 +1,16 @@
+Category	Submitter	Submission_Name	F1
+All Benchmark Regions - MULTI	Hanying Feng	Combination of Illumina, PacBio HIFI, and Oxford Nanopore submission	0.999
+All Benchmark Regions - MULTI	Mohammad Sahraeian	RN-Illumina-PacBio-ONT	0.999
+All Benchmark Regions - MULTI	Andrew Carroll	DeepVariant PacBio-Ill	0.999
+All Benchmark Regions - PACBIO	Andrew Carroll	DeepVariant PacBio	0.9983
+MHC - MULTI	Hanying Feng	Combination of Illumina, PacBio HIFI, and Oxford Nanopore submission	0.9979
+MHC - MULTI	Hanying Feng	Combination of Illumina, PacBio HIFI, and Oxford Nanopore submission Model2	0.9979
+All Benchmark Regions - ILLUMINA	Varun Jain	DRAGEN Experimental Extension into Difficult Regions – Illumina reads	0.9971
+MHC - PACBIO	Hanying Feng	PacBio HIFI only submission	0.9949
+Difficult-to-Map Regions - MULTI	Mohammad Sahraeian	RN-Illumina-PacBio-ONT	0.9944
+Difficult-to-Map Regions - PACBIO	Hanying Feng	PacBio HIFI only submission	0.9929
+MHC - ILLUMINA	Sinem Demirkayabudak	Seven Bridges GRAF - Illumina	0.9923
+Difficult-to-Map Regions - ONT	Kishwar Shafin	PEPPER-DeepVariant (ONT_9to6)	0.9825
+MHC - ONT	Mian Umair Ahsan	ONT NanoCaller Clair Medaka Ensemble	0.9717
+Difficult-to-Map Regions - ILLUMINA	Varun Jain	DRAGEN Experimental Extension into Difficult Regions – Illumina reads	0.9693
+All Benchmark Regions - ONT	Kishwar Shafin	PEPPER-DeepVariant (ONT_9to6)	0.9651

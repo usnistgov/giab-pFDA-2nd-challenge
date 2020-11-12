@@ -1,0 +1,154 @@
+## Pipeline dependencies - minimap2, samtools, pbmm2, and mosdepth
+
+## For ftp files
+from snakemake.remote.FTP import RemoteProvider as FTPRemoteProvider
+FTP = FTPRemoteProvider()
+grch38_url = "ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz"
+
+## Wildcards
+HG=['HG002', 'HG003', 'HG004']
+TECH=['pacbio','ill','ont']
+
+## variables
+nas_path = "/Volumes/giab/data/alignment/AshkenazimTrio/UCSC_Ultralong_OxfordNanopore_Promethion"
+## Running pipeline
+rule all:
+    input: 
+        expand("bams/{hg}-{tech}_GRCh38.bam", hg= HG, tech = ["pacbio", "ill"]), 
+        expand("bam_stats/{hg}-{tech}_GRCh38.txt", hg= HG, tech = ["pacbio", "ill"]),
+        expand("coverage/{hg}-{tech}_GRCh38.mosdepth.summary.txt", hg= HG,tech = TECH)
+
+
+## Aligning to reference -----------------------------------------------------------
+def get_readgroup(wildcards):
+    ## Format bam read group 
+    tech = "Placeholder" #wildcards.tech
+    hg = wildcards.hg
+    run      = f"{tech}-{hg}"
+    model    = tech
+    lib      = f"{tech}-{hg}"
+    sample   = hg
+    
+    read_group =   (
+        f"@RG\\tID:{run}\\t"
+        f"PL:tech\\t"
+        f"PM:{model}\\t"
+        f"LB:{lib}\\t"
+        f"SM:{sample}"
+    )
+    
+    return(read_group)
+
+rule get_GRCh38:
+    input: FTP.remote(grch38_url)
+    output: "resources/GRCh38.fa"
+    shell: "gunzip -c {input} > {output}"    
+
+rule index_ref:
+    input: "resources/GRCh38.fa"
+    output: "resources/GRCh38.fa.fai"
+    wrapper: "0.38.0/bio/samtools/faidx"
+
+rule bwa_index:
+    input:
+        "resources/GRCh38.fa"
+    output:
+        "resources/GRCh38.fa.amb",
+        "resources/GRCh38.fa.ann",
+        "resources/GRCh38.fa.bwt",
+        "resources/GRCh38.fa.pac",
+        "resources/GRCh38.fa.sa"
+    log:
+        "logs/bwa_index/GRCh38.log"
+    params:
+        prefix="resources/GRCh38.fa",
+        algorithm="bwtsw"
+    wrapper:
+        "0.66.0/bio/bwa/index"
+
+#rule map_ont_reads:
+#    input:
+#        ref="resources/GRCh38.fa", 
+#        refidx = "resources/GRCh38.fa.fai",
+#        fastq="fastq/{hg}-ont.fq.gz"
+#    output: "bams/{hg}-ont_GRCh38.bam"
+#    params: read_group=get_readgroup, mem=4, threads=4
+#    shell: """
+#        minimap2 -t 12 -aL -z 600,200 -x map-ont \
+#                -R \'{params.read_group}\' {input.ref} {input.fastq} \
+#            | samtools sort -m {params.mem}G \
+#                -O bam --reference {input.ref} > {output}
+#        samtools index {output}
+#    """
+
+rule map_pb_reads:
+    input:
+        ref="resources/GRCh38.fa", 
+        refidx = "resources/GRCh38.fa.fai",
+        fastq="fastq/{hg}-pacbio.fq.gz"
+    output: "bams/{hg}-pacbio_GRCh38.bam"
+    params: read_group=get_readgroup, mem=8, threads=8
+    shell: """
+        pbmm2 align {input.ref} {input.fastq} {output} \
+            --preset CCS -j {params.threads} \
+            --sort -m {params.mem}G -J 2 --bam-index BAI 
+        """
+
+rule map_ill_reads:
+    input:
+        reads=["{hg}.novaseq.pcr-free.35x.R1.fastq.gz", "{hg}.novaseq.pcr-free.35x.R2.fastq.gz"],
+	refidx="resources/GRCh38.fa.bwt"
+    output:
+        bam="bams/{hg}-ill_GRCh38.bam"
+    log:
+        "logs/bwa_mem/{hg}-ill.log"
+    params:
+        index="resources/GRCh38.fa",
+        extra=r"-R '@RG\tID:{hg}\tSM:{hg}'",
+        sort="samtools",
+	sort_order="coordinate",
+	sort_extra="-m8G"	
+    threads: 16
+    wrapper: "0.66.0/bio/bwa/mem"
+
+rule samtools_index:
+    input: "bams/{hg}-ill_GRCh38.bam",
+    output: "bams/{hg}-ill_GRCh38.bam.bai"
+    wrapper: "0.67.0/bio/samtools/index"
+
+## BAM QC -------------------------------------------------------------
+rule samtools_stats:
+    input:
+        "bams/{hg}-{tech}_GRCh38.bam"
+    output:
+        "bam_stats/{hg}-{tech}_GRCh38.txt"
+    log:
+        "logs/stats_{hg}-{tech}_GRCh38.log"
+    wrapper:
+        "0.38.0/bio/samtools/stats"
+
+## Calculate Depth -------------------------------------------------------------
+rule calc_depth:
+    input: 
+        bam="bams/{hg}-{tech}_GRCh38.bam",
+        bai="bams/{hg}-{tech}_GRCh38.bam.bai"
+    output: "coverage/{hg}-{tech}_GRCh38.mosdepth.summary.txt"
+    params: prefix = "coverage/{hg}-{tech}_GRCh38"
+    shell: """
+        mosdepth -n --fast-mode \
+            --by 1000 --use-median \
+            {params.prefix} {input.bam}
+    """
+
+rule calc_depth_ont:
+    input: 
+        bam=nas_path + "/{hg}/{hg}_GRCh38_ONT-UL_UCSC_20200508.bam",
+        bai=nas_path + "/{hg}/{hg}_GRCh38_ONT-UL_UCSC_20200508.bam.bai"
+    output: "coverage/{hg}-ont_GRCh38.mosdepth.summary.txt"
+    params: prefix = "coverage/{hg}-ont_GRCh38"
+    shell: """
+        mosdepth -n --fast-mode \
+            --by 1000 --use-median \
+            {params.prefix} {input.bam}
+    """
+

@@ -1,0 +1,458 @@
+---
+title: "Indepth Analysis of ONT variant callset"
+date: '`r Sys.Date()`'
+output: 
+    bookdown::html_document2:
+        toc: true
+        toc_float: true
+        df_print: paged
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(ggrepel)
+```
+
+# Objective
+In depth analysis of an example submission to demonstrate the utility of the stratifications. 
+
+Will compare stratified results for Kishwar's ONT, `PEPPER-DeepVariant (ONT_9to6)` and `PEPPER-DeepVariant (ONT)` to Ill DeepVariant.
+
+Where does ONT perform well relative to Ill?
+What are the particular limitations or weaknesses of the variant calling method. 
+
+# Approach
+Compared stratified benchmarking results across datasets. 
+
+# Loading Data
+```{r}
+submissions <- c(illdv = "BSODP", 
+                       pepper = "RU88N") %>% 
+    rep(each = 3)
+
+giab_ids <- rep(paste0("HG00",2:4), 2)
+
+
+callset_ids <- map2(submissions, giab_ids, ~paste0(.x, "_",.y))
+callset_names <- map2(names(submissions), giab_ids, ~paste0(.x, "_",.y))
+
+extended_csvs <- map2(submissions, callset_ids,
+                      ~here("data", "extended_csvs", 
+                           .x, paste0(.y, ".extended.csv"))
+                      ) %>% 
+    set_names(callset_names)
+
+## Loading extended CSVs #######################################################
+## Defining col types to avoid ti/tiv logical issues
+ctypes <- str_c(c(rep("c", 7), rep("d", 9), rep("dccddcd", 7)), 
+                sep = "", collapse = "")
+
+extended_df <- extended_csvs %>% 
+    map_dfr(read_csv, col_types = ctypes, .id = "callset")
+
+results_df <- extended_df %>% 
+    filter(Subtype == "*", Filter == "PASS",  Subset.Size > 1000) %>% 
+    mutate(phred_F1 = -10*log(1-METRIC.F1_Score)/log(10))
+
+
+## Calculating geometric mean and converting metrics to phred scale
+mean_metrics_df <- results_df %>% 
+    separate(callset, into = c("caller","giab_id"), sep = "_") %>% 
+    filter(giab_id != "HG002") %>% 
+    select(giab_id, caller, Type, Subset,
+           METRIC.Recall, METRIC.Precision, METRIC.F1_Score) %>% 
+    pivot_longer(cols = c("METRIC.Recall","METRIC.Precision", "METRIC.F1_Score"),
+                 names_to = "metric", values_to = "value") %>% 
+    group_by(caller, Type, Subset, metric) %>% 
+    summarise(value = exp(mean(log(value)))) %>% 
+    mutate(phred_value = -10*log(1-value)/log(10))
+```
+
+
+Stratification Metadata
+```{r}
+strat_metadata_df <- read_tsv(here("data-raw","v2.0-GRCh38-strat-metadata.txt")) %>% 
+    mutate(strat_group = str_extract(path, ".*(?=/)"))
+```
+Stratifications per group
+```{r} 
+strat_metadata_df %>% 
+    count(strat_group)
+```
+
+```{r}
+strat_metadata_df %>% 
+    filter(strat_group == "LowComplexity") %>% 
+    mutate(subgroup = case_when( str_detect(path, "notin") ~ "Union",
+                                 str_detect(path, "AllTandemRepeatsandHomopolymers") ~ "Union",
+                                 str_detect(path, "TandemRepeats") ~ "TandemRepeats",
+                                 str_detect(path, "All|notin") ~ "Union",
+                                 str_detect(path, "homopol") ~ "Homopolymers",
+                                 str_detect(path, "SimpleRepeat") ~ "SimpleRepeats",
+                                TRUE ~ "Unassigned"
+                                ))  %>% 
+    count(subgroup)
+```
+
+
+Making a 2D scatter to compare the variant calling methods
+```{r}
+wide_callset_results_df <- results_df %>% 
+    filter(str_detect(Subset, "HG00", negate = TRUE),
+           Subset != "TS_boundary") %>% 
+    select(callset, Type, Subset, phred_F1) %>% 
+    separate(callset, into = c("caller","giab_id"), sep = "_") %>% 
+    pivot_wider(names_from = "caller", values_from = "phred_F1") %>% 
+    left_join(strat_metadata_df)
+```
+
+Annotating with metadata
+```{r}
+strat_results_df <- mean_metrics_df %>%
+    left_join(strat_metadata_df) %>% 
+    filter(str_detect(Subset, "HG00", negate = TRUE),
+           Subset != "TS_boundary", Subset != "TS_Contained")
+
+wide_strat_results_df <- strat_results_df %>% 
+    select(-value) %>% 
+    pivot_wider(names_from = "caller", values_from = "phred_value")
+    
+```
+
+```{r}
+wide_strat_results_df %>% 
+    count(strat_group)
+```
+
+# Results 
+```{r}
+wide_strat_results_df %>%
+    select(strat_id, strat_group) %>%
+    distinct() %>%
+    arrange(strat_group)
+```
+
+
+```{r}
+scatter_plt_df <- wide_strat_results_df %>%
+        ## Reducing the number of plotted stratifications
+        filter(strat_group != "GCcontent",
+               strat_group != "FunctionalTechnicallyDifficultRegions",
+               strat_group != "union",
+               str_detect(strat_id, "di|tri|quadTR", negate = TRUE),
+               str_detect(strat_id, "All|notin|non", negate = TRUE)) %>% 
+    mutate(metric_diff = pepper - illdv) %>% 
+    filter(pepper != 0, illdv != 0) %>% 
+    group_by(Type, metric) %>% 
+    arrange(-metric_diff) %>% 
+    mutate(rank = 1:n(), 
+           labeled_strats = case_when(rank < 3 && metric_diff > 0 ~ strat_id, 
+                                      n() - rank < 3 ~ strat_id)) %>% 
+    mutate(metric = str_remove(metric, "METRIC."),
+           metric = if_else(metric == "F1_Score", "F1", metric)) %>% 
+    mutate(Type = if_else(Type == "SNP", "SNV", Type))
+    
+(
+    scatter_plt <- scatter_plt_df %>%
+        ggplot() +
+        geom_abline(aes(intercept = 0, slope = 1)) +
+        # geom_linerange(
+        #     data = filter(scatter_plt_df, Subset == "*"),
+        #     aes(
+        #         x = illdv,
+        #         ymin = 0,
+        #         ymax = pepper,
+        #     ),
+        #     linetype = 2,
+        #     show.legend = FALSE
+        # ) +
+        # geom_segment(
+    #     data = filter(scatter_plt_df, Subset == "*"),
+    #     aes(
+    #         x = 0,
+    #         xend = illdv,
+    #         y = pepper,
+    #         yend = pepper,
+    #     ),
+    #     linetype = 2,
+    #     show.legend = FALSE
+    # ) +
+    geom_point(
+        aes(
+            x = illdv,
+            y = pepper,
+            fill = strat_group,
+            label = strat_id
+        ),
+        shape = 21
+    ) +
+        geom_text_repel(
+            point.padding = 0.25,
+            aes(x = illdv,
+                y = pepper,
+                label = labeled_strats),
+            size = 2,
+            na.rm = TRUE,
+            min.segment.length = 0.2
+        ) +
+        facet_grid(metric ~ Type) +
+        theme_bw() +
+        labs(x = "ILL DeepVariant % (log)",
+             y = "ONT PEPPER-DeepVariant % (log)",
+             fill = "Stratification\nCategory") +
+        scale_x_continuous(
+            breaks = c(0, 10, 20, 30, 40),
+            labels = c("0", "90", "99", "99.9", "99.99")
+        ) +
+        scale_y_continuous(
+            breaks = c(0, 10, 20, 30, 40),
+            labels = c("0", "90", "99", "99.9", "99.99")
+        ) + 
+        scale_fill_brewer(type = "qual", palette = 3) + 
+        coord_equal() + 
+    theme(
+        strip.text.y = element_text(angle = 360),
+        legend.position = "bottom"
+    ) +
+        guides(fill = guide_legend(
+            title.position = "left", nrow = 2
+        )) 
+)
+```
+
+```{r}
+ggsave(here("figures","indepth_analysis.png"), scatter_plt, height = 8, width = 6, dpi = "retina")
+```
+```{r}
+plotly::ggplotly(scatter_plt)
+```
+
+
+## Plot for JIMB presentation
+```{r}
+(
+    scatter_plt <- scatter_plt_df %>%
+        filter(metric == "F1") %>% 
+        ggplot() +
+        geom_abline(aes(intercept = 0, slope = 1)) +
+        # geom_linerange(
+        #     data = filter(scatter_plt_df, Subset == "*"),
+        #     aes(
+        #         x = illdv,
+        #         ymin = 0,
+        #         ymax = pepper,
+        #     ),
+        #     linetype = 2,
+        #     show.legend = FALSE
+        # ) +
+        # geom_segment(
+    #     data = filter(scatter_plt_df, Subset == "*"),
+    #     aes(
+    #         x = 0,
+    #         xend = illdv,
+    #         y = pepper,
+    #         yend = pepper,
+    #     ),
+    #     linetype = 2,
+    #     show.legend = FALSE
+    # ) +
+    geom_point(
+        aes(
+            x = illdv,
+            y = pepper,
+            fill = strat_group,
+            label = strat_id
+        ),
+        shape = 21
+    ) +
+        geom_text_repel(
+            point.padding = 0.25,
+            aes(x = illdv,
+                y = pepper,
+                label = labeled_strats),
+            size = 2,
+            na.rm = TRUE,
+            min.segment.length = 0.2
+        ) +
+        facet_grid(metric ~ Type) +
+        theme_bw() +
+        labs(x = "ILL DeepVariant % (log)",
+             y = "ONT PEPPER-DeepVariant % (log)",
+             fill = "Stratification Group") +
+        scale_x_continuous(
+            breaks = c(0, 10, 20, 30, 40),
+            labels = c("0", "90", "99", "99.9", "99.99")
+        ) +
+        scale_y_continuous(
+            breaks = c(0, 10, 20, 30, 40),
+            labels = c("0", "90", "99", "99.9", "99.99")
+        ) + 
+        scale_fill_brewer(type = "qual", palette = 3) + 
+        coord_equal() + 
+    theme(
+        strip.text.y = element_text(angle = 360),
+        legend.position = "bottom"
+    ) +
+        guides(fill = guide_legend(
+            title.position = "left", nrow = 2
+        )) 
+)
+```
+
+```{r}
+ggsave(here("figures","indepth_analysis_F1_only.pdf"), scatter_plt, height = 4, width = 8, dpi = "retina")
+```
+
+## Exploratory Plots
+
+```{r}
+bar_plt_df <- strat_results_df %>%
+        ## Reducing the number of plotted stratifications
+        filter(strat_group != "GCcontent",
+               strat_group != "FunctionalTechnicallyDifficultRegions",
+               strat_group != "FunctionalRegions",
+               strat_group != "union",
+               str_detect(strat_id, "di|tri|quadTR", negate = TRUE),
+               str_detect(strat_id, "All|notin", negate = TRUE),
+               !strat_id %in% c("Gaps", "TR >10kb","VDJ", 
+                                "Contigs <500kb", "High Coverage SegDups"))
+
+bar_plt_df %>% 
+    ggplot() + geom_bar(aes(x = strat_id, y = phred_value, fill = caller),
+                        stat = "identity", position = "dodge") +
+    facet_grid(Type*metric~strat_group, scales = "free", space = "free") + 
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = -45, hjust = 0)) + 
+    labs(fill = "Variant Caller", x = "Stratification", y = "Metric % (log)")
+```
+
+
+
+
+
+__Key Points__  
+
+- In combination with advances in ONT basecalling and the application of ML-based variant calling methods ONT variant callsets have comparable overalll performance to the Ill DeepVariant callset for SNPs.  
+- SNP F1 PEPPER = 99.64%, DV = 99.57%
+- INDEL F1 PEPPER = 72.54%, DV = 99.59%
+
+- ILL DV better for smaller tandem repeats in SNPs.  
+- ONT/ PEPPER consistently higher performance for difficult regions including segdups, low mappability, and large tandem repeats.  
+- Ill DeepVariant INDEL variant calls are more accurate the the ONT based calls for nearly all genomic context. For INDELs ONT better in low mappability and L1H  
+
+
+Overall performance
+```{r}
+results_df %>% filter(Subtype == "*", Subset == "*", 
+                      str_detect(callset, "HG002", negate = TRUE)) %>% 
+    separate(callset, into = c("caller","giab_id"), sep = "_") %>% 
+    group_by(caller, Type) %>% 
+    summarise(METRIC.Recall = exp(mean(log(METRIC.Recall))),
+              METRIC.Precision = exp(mean(log(METRIC.Precision))),
+              METRIC.F1_Score = exp(mean(log(METRIC.F1_Score)))) %>% 
+    arrange(Type)
+```
+
+__TODO__ Add Precision and Recall Metrics, plot combined parents  
+
+__Summary Table__
+```{r}
+wide_callset_results_df %>% 
+    mutate(diff = pepper - illdv) %>% 
+    group_by(Type, Subset) %>% 
+    summarise(pepper = mean(pepper, na.rm = TRUE),
+              illdv = mean(illdv, na.rm = TRUE),
+              diff = mean(diff)) %>% 
+    arrange(Type, diff) %>% 
+    DT::datatable(rownames = FALSE)
+```
+
+
+# Exploratory Figures
+
+
+```{r}
+results_df %>% 
+    left_join(strat_metadata_df) %>% 
+    filter(strat_group != "GenomeSpecific") %>% 
+    ggplot() + 
+        geom_point(aes(x = strat_id, y = phred_F1, color = callset)) + 
+        facet_grid(strat_group~Type, scales = "free", space = "free") + coord_flip()
+
+```
+
+```{r}
+(
+    scatter_plt <- wide_callset_results_df %>%
+        ggplot() +
+        geom_abline(aes(intercept = 0, slope = 1)) +
+        geom_linerange(
+            data = filter(wide_callset_results_df, Subset == "*"),
+            aes(
+                x = illdv,
+                ymin = 0,
+                ymax = pepper,
+                color = giab_id
+            ),
+            show.legend = FALSE
+        ) +
+        geom_segment(
+            data = filter(wide_callset_results_df, Subset == "*"),
+            aes(
+                x = 0,
+                xend = illdv,
+                y = pepper,
+                yend = pepper,
+                color = giab_id
+            ),
+            show.legend = FALSE
+        ) +
+        geom_path(aes(x = illdv, y = pepper, group = Subset)) + 
+        geom_point(aes(
+            x = illdv,
+            y = pepper,
+            fill = giab_id,
+            label = Subset
+        ), shape = 21) +
+        facet_grid(strat_group ~ Type) +
+        theme_bw() + 
+        labs(x = "ILL DeepVariant F1% (log)",
+             y = "ONT PEPPER F1% (log)",
+             fill = "GIAB ID") + 
+        theme(strip.text.y = element_text(angle = 360), 
+              legend.position = "bottom")
+)
+```
+
+```{r}
+plotly::ggplotly(scatter_plt)
+```
+
+```{r}
+strat_results_df %>% 
+    filter(str_detect(strat_id, "GC", negate = TRUE),
+           str_detect(strat_id, "notin", negate = TRUE)) %>% 
+    ggplot() + 
+    geom_point(aes(x = strat_id, y = phred_value, fill = caller), shape = 21) +
+    facet_grid(metric~Type) +
+    theme_bw() + 
+    theme(axis.text.x = element_text(angle = 90))
+    
+```
+# Session Information
+## System Information
+```{r}
+sessioninfo::platform_info()
+```
+
+
+## Package Versions
+```{r}
+sessioninfo::package_info() %>% 
+    filter(attached = TRUE) %>% 
+    select(package, loadedversion, date, source) %>%
+    knitr::kable(booktabs = TRUE, row.names = FALSE)
+```

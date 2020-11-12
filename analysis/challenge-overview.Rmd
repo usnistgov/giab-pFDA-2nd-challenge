@@ -1,0 +1,155 @@
+---
+title: "pFDA-GIAB V2 Challenge Overview"
+date: '`r Sys.Date()`'
+output: 
+    bookdown::html_document2:
+        toc: true
+        toc_float: true
+        df_print: paged
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(knitr)
+library(ggpubr)
+```
+
+# Participant Breakdown
+```{r message = FALSE}
+## Loading and summarizing challenge participants
+submission_df <- read_tsv(here("data", "anonymized_challenge_results_v5.txt"))
+n_submissions <- nrow(submission_df)
+n_submitters <- unique(submission_df$`Participant(s)`) %>% length()
+
+## Submission Metadata
+metadata_df <- read_tsv(here("data-raw","anonymized_metadata_table.tsv"))
+```
+
+
+```{r}
+## Summary figure with submission breakdown
+tech_count <- metadata_df %>% 
+    mutate(Technology = case_when(Technology == "ILLUMINA" ~ "ILL",
+                                  Technology == "PACBIO" ~ "PB",
+                                  Technology == "ONT" ~ "ONT",
+                                  Multi_Details == "ILLUMINAPACBIO" ~ "ILL & PB",
+                                  Multi_Details == "ILLUMINAPACBIOONT" ~ "ILL, PB, & ONT",
+                                  Multi_Details == "PACBIOONT" ~ "PB & ONT",
+                                  TRUE ~ "Error"),
+           Technology = factor(Technology, 
+                               levels = c("PB & ONT", "ONT", "ILL, PB, & ONT",
+                                          "ILL & PB", "PB", "ILL"))
+           ) %>% 
+    ggplot() + 
+    geom_bar(aes(x = Technology)) + 
+    theme_bw() + 
+    labs(x = "Sequencing Technology", y = "# of Submissions") + 
+    coord_flip()
+
+caller_cat <- metadata_df %>% 
+    mutate(Technology = case_when(Technology == "ILLUMINA" ~ "ILL",
+                                  Technology == "PACBIO" ~ "PB",
+                                  Technology == "ONT" ~ "ONT",
+                                  Multi_Details == "ILLUMINAPACBIO" ~ "ILL & PB",
+                                  Multi_Details == "ILLUMINAPACBIOONT" ~ "ILL, PB, & ONT",
+                                  Multi_Details == "PACBIOONT" ~ "PB & ONT",
+                                  TRUE ~ "Error"),
+           Technology = factor(Technology, 
+                               levels = c("PB & ONT", "ONT", "ILL, PB, & ONT",
+                                          "ILL & PB", "PB", "ILL")),
+           caller_cat = factor(caller_cat, levels = c("Graph", "Stat", "ML"))
+           ) %>% 
+    ggplot() + 
+        geom_bar(aes(x = Technology, fill = caller_cat), position = "fill") +
+    scale_fill_brewer(type = "qual", palette = 3) + 
+    theme_bw() + 
+    labs(x = "Sequencing Technology", 
+         y = "Fraction of Submissions",
+         fill = "Variant Caller\nCategory") + 
+    coord_flip()
+
+submission_summary_plt <- ggarrange(
+    tech_count,
+    caller_cat + rremove("ylab") + rremove("y.text"),
+    labels = "AUTO",label.x = c(0.2,-0.025),
+    nrow = 1,
+    align = "h"
+)
+
+```
+
+
+Number of long read and multi-technology submissions using ML and non-ML based variant callers.
+```{r}
+metadata_df %>% 
+    filter(Technology != "ILLUMINA") %>% 
+    count(caller_cat)
+```
+
+
+## Manuscript Text
+
+The challenge included numerous submissions from multiple teams leveraging both single and multiple sequencing technologies.
+There were`r n_submissions` challenge submissions from `r n_submitters` participants. 
+Challenge participants submitted variant callsets generated using one or more 
+sequencing technologies, Illumina, PacBio HiFi, and ONT Ultralong 
+(see methods for datasets descriptions). 
+For single technology submission Illumina was most common (24 out of 44), followed by PacBio (17), and ONT (3). PacBio was used in all of the multiple technology submissions (20), Illumina was used in all but 1 (PacBio and ONT only), and seven submission used data from all three.
+
+
+Number of submissions using ML and non-ML methods
+```{r}
+metadata_df %>% 
+    count(caller_cat)
+```
+
+```{r}
+submission_summary_plt
+```
+
+
+
+```{r fig.cap = 'Overall performance (A) and submission rank (B) varied by technology and stratification (log scale). Generally, submissions that used multiple technologies (MULTI) outperformed single technology submissions for all three genomic context categories. Panel A shows a Histogram of F1 % (higher is better) for the three genomic stratifications evaluated. Submission counts across technologies are indicated by light grey bars and individual technologies by colored bars. Panel B shows individual submission performance. Data points represent submission performance for the three stratifications (difficult-to-map regions, all benchmark regions, MHC), and lines connect submissions. Category top performers are indicated by diamonds with "W”s.' }
+## Figure from challenge-results.Rmd
+include_graphics(here("figures","challenge_results.png"))
+```
+
+
+
+Submission results summary - wait for final list of submissions that we are including in the .
+```{r}
+submission_df %>%
+    select(`Participant(s)`, Technology, Multi_Details) %>%
+    distinct() %>%
+    count(Technology, Multi_Details, name = "Submissions") %>%
+    arrange(-Submissions) %>%
+    kable( caption = "Number of submissions by technology or combination of technologies.")
+```
+
+# Saving Figures
+```{r}
+ggsave(here("figures","submission_breakdown.pdf"), submission_summary_plt,
+       width = 6, height = 3)
+
+ggsave(here("figures","submission_breakdown.png"), submission_summary_plt,
+       width = 6, height = 3)
+```
+
+
+# Session Information
+## System Information
+```{r}
+sessioninfo::platform_info()
+```
+
+
+## Package Versions
+```{r}
+sessioninfo::package_info() %>% 
+    filter(attached = TRUE) %>% 
+    select(package, loadedversion, date, source) %>%
+    knitr::kable(booktabs = TRUE, row.names = FALSE)
+```

@@ -1,0 +1,257 @@
+---
+title: "Seq Data Characteristics"
+date: '`r Sys.Date()`'
+output: 
+    bookdown::html_document2:
+        toc: true
+        toc_float: true
+        df_print: paged
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(fastqcr)
+```
+
+# Background
+Generate summary figures and tables with sequence data characteristics for fastq datasets provided to the challenge participants.
+
+Fastq app on precisionFDA was used to calculate seq data summary statistics and the `fastqcr` R package was used to summarize the qc results.
+
+Seqkit fq2tsv used to extract read quality and length information for PacBio and ONT data
+
+# Fastqc results
+## Loading Data
+```{r}
+qc_lst <- here("data","fastqc") %>% 
+    list.files(pattern = "stats-fastqc.txt") %>% 
+    set_names(str_remove(., pattern = ".stats-fastqc.txt")) %>% 
+    map(~here("data","fastqc", .))
+
+qc_metadata_df <- tibble(sample = names(qc_lst), fastqc_file = unlist(qc_lst)) %>% 
+    mutate(Technology = case_when(str_detect(sample, "PacBio") ~ "PACBIO",
+                                  str_detect(sample, "novaseq") ~ "ILLUMINA",
+                                  str_detect(sample, "guppy") ~ "ONT",
+                                  TRUE ~ "ERROR"),
+           giab_id    = str_sub(sample, start = 0, end = 5),
+           read_dir   = case_when(Technology %in% c("PACBIO", "ONT") ~ "R0",
+                                  str_detect(sample, "R1") ~ "R1",
+                                  str_detect(sample, "R2") ~ "R2"))
+
+ill_metadata_df <- qc_metadata_df %>% 
+    filter(Technology == "ILLUMINA")
+
+pb_metadata_df <- qc_metadata_df %>% 
+    filter(Technology == "PACBIO")
+
+ont_metadata_df <- qc_metadata_df %>% 
+    filter(Technology == "ONT")
+
+modules_to_read <- c(
+    "Basic Statistics",
+    "Per base sequence quality",
+    "Per sequence quality scores",
+    "Sequence Length Distribution"
+)
+
+qc_ill <- qc_read_collection(ill_metadata_df$fastqc_file, 
+                             sample_names = ill_metadata_df$sample,
+                             modules = modules_to_read)
+qc_pb <- qc_read_collection(pb_metadata_df$fastqc_file, 
+                             sample_names = pb_metadata_df$sample,
+                             modules = modules_to_read)
+
+qc_ont <- qc_read_collection(ont_metadata_df$fastqc_file, 
+                             sample_names = ont_metadata_df$sample,
+                             modules = modules_to_read)
+```
+
+# Generating Summary Statistics Table
+
+```{r}
+bind_rows(qc_ill$basic_statistics, 
+          qc_pb$basic_statistics) %>% 
+    left_join(qc_metadata_df) %>% 
+    filter(Measure %in% c("Total Sequences", "Sequence length", "%GC")) %>% 
+    select(Technology, giab_id, Measure, Value, read_dir) %>% 
+    pivot_wider(names_from = "Measure", values_from = "Value") %>% 
+    ## Only using R1 for Illumina since R1 and R2 are the same
+    filter(read_dir != "R2") %>% 
+    select(-read_dir)
+```
+
+# Seq Quality Comparison
+```{r}
+qc_ill$per_sequence_quality_scores %>% 
+    left_join(qc_metadata_df)  %>% 
+    ggplot() + 
+    geom_bar(aes(x = Quality, y = Count, fill = read_dir), 
+             position = "dodge",
+             stat = "identity") + 
+    facet_wrap(~giab_id, ncol = 1) + 
+    theme_bw() + labs(fill = "Read Direction", x = "Sequence Quality Score") + 
+    theme(legend.position = "bottom")
+```
+
+## PacBio Plot
+
+```{r}
+pb_qual <- qc_pb$per_sequence_quality_scores %>% 
+    left_join(qc_metadata_df)  %>% 
+    ggplot() + 
+    geom_bar(aes(x = Quality, y = Count),
+             stat = "identity") + 
+    facet_wrap(~giab_id, ncol = 1) + 
+    theme_bw() + labs(x = "Sequence Quality Score") + 
+    theme(legend.position = "bottom")
+
+pb_length <- qc_pb$sequence_length_distribution %>% 
+    left_join(qc_metadata_df)  %>%
+    mutate(Length = as.integer(str_remove(Length, "-.*"))) %>% 
+    filter(Length > 10000, Length < 20000) %>%
+    ggplot() + 
+    geom_bar(aes(x = Length/1000, y = Count),
+             stat = "identity") + 
+    facet_wrap(~giab_id, ncol = 1) + 
+    theme_bw() + labs(x = "Read Length (kb)") + 
+    theme(legend.position = "bottom")
+
+(pb_combined_plt <- ggpubr::ggarrange(pb_qual, pb_length, labels = "AUTO"))
+```
+```{r}
+ggsave(here("figures","pb_seq.pdf"), pb_combined_plt, width = 5, height = 5)
+ggsave(here("figures","pb_seq.png"), pb_combined_plt, 
+       width = 5, height = 5, dpi = "retina")
+```
+
+# Seqkit
+## Load Data
+```{r}
+library(data.table)
+library(dtplyr)
+library(dplyr, warn.conflicts = FALSE)
+```
+
+```{r}
+calc_n50 <- function(seq_lengths){
+    sorted_lengths <- sort(seq_lengths)
+    cum_lengths <- cumsum(as.numeric(sorted_lengths))
+    min(sorted_lengths[cum_lengths >= max(cum_lengths)*0.5])
+}
+
+get_seq_stats <- function(seq_file){
+    seq_df <- fread(seq_file, col.names = c("read_id","length", "qual"))
+    
+    ## Calculating Stats
+    n_reads <- nrow(seq_df)
+    n50 <- calc_n50(seq_df$length)
+    med_length = median(seq_df$length)
+    
+    ## Return DF
+    tibble(n_reads, n50, med_length)
+}
+
+seq_stats_df <- list.files(here("data", "fq_stats"), 
+                           full.names = TRUE) %>% 
+    set_names(basename(.)) %>% 
+    map_dfr(get_seq_stats, .id = "dataset")
+```
+
+```{r}
+seq_stats_df
+```
+
+# ONT Read Length  Plot
+```{r}
+get_ont_seq <- function(seq_file, subset_frac = 0.05, short_read_filter = 100){
+    seq_dt <- fread(seq_file, col.names = c("read_id","length", "qual"))
+    ## Excluding short reads
+    seq_dt <- seq_dt[seq_dt$length > short_read_filter,]
+    
+    ## Random subset%
+    n_seqs <- nrow(seq_dt)
+    seq_subset <- sample(1:n_seqs, size = floor(n_seqs * subset_frac))
+     
+    seq_dt[seq_subset,] %>% 
+        as_tibble() 
+}
+
+set.seed(100)
+ont_fq_df <- list.files(here("data", "fq_stats"), 
+                        pattern = "Guppy",
+                        full.names = TRUE) %>% 
+    set_names(basename(.)) %>% 
+    map_dfr(get_ont_seq, .id = "dataset")
+
+(
+    read_len_fig <- ont_fq_df %>%
+
+        mutate(GIAB = str_remove(dataset, "_.*")) %>%
+        ggplot() +
+        ggridges::geom_density_ridges(aes(
+            y = GIAB,
+            x = length
+        )) +
+        scale_x_log10() +
+        theme_bw() +
+        annotation_logticks(sides = "b") +
+        labs(x = "Read Length (bp)",
+             y = "GIAB ID") +
+        theme_bw() + 
+        theme()
+)
+```
+```{r}
+ggsave(here("figures","ont_seq_length.png"), read_len_fig, 
+       width = 4, height = 4, dpi = "retina")
+```
+
+
+# Coverage analysis
+```{r}
+get_cov_stats <- function(cov_file){
+    cov_df <- fread(cov_file, 
+                    col.names = c("chrom","start","end","coverage")) %>% 
+        as_tibble() %>% 
+        filter(chrom %in% paste0("chr", 1:22)) 
+    
+    ## Calculating Stats
+    coverage <- cov_df$coverage
+    median_cov <- median(coverage)
+    lq_cov <- quantile(coverage, probs = 0.25)
+    uq_cov <- quantile(coverage, probs = 0.75)
+    max_cov <- max(coverage)
+    min_cov <- min(coverage)
+    
+    ## Return DF
+    tibble(median_cov, lq_cov, uq_cov, max_cov, min_cov)
+}
+
+cov_stats_df <- list.files(here("data", "coverage"), 
+                           full.names = TRUE) %>% 
+    set_names(basename(.)) %>% 
+    map_dfr(get_cov_stats, .id = "dataset")
+```
+
+```{r}
+cov_stats_df
+```
+
+
+# Session Information
+## System Information
+```{r}
+sessioninfo::platform_info()
+```
+
+
+## Package Versions
+```{r}
+sessioninfo::package_info() %>% 
+    filter(attached = TRUE) %>% 
+    select(package, loadedversion, date, source) %>%
+    knitr::kable(booktabs = TRUE, row.names = FALSE)
+```
