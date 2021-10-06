@@ -1,0 +1,81 @@
+samples: "samples.tsv"
+genome: "/scratch/references/hg38-noalt/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
+novoalign_license: "/scratch/novoalign.lic"
+
+# File containing SnpSift filter string
+filter_file: "filter_fda.txt"
+
+callable_file: "HG002_GRCh38_1_22_v4.1_draft_benchmark.bed"
+
+# which chromosomes/contigs to consider
+contigs: "chromosomes_Hsapiens.txt"
+
+variants:
+  callable_threshold: 5
+  min_variant_allele_freq: 0.3
+  min_variant_reads: 3
+  min_base_qual: 25
+  min_mapping_qual: 10
+
+  # annotation
+  anno_db_root: "/scratch/anno_sources"
+  dbnames:
+    - dbsnp
+    - gnomad
+    - swegen
+    - danish_refgene
+
+  # VCF fields to include in the variant tsv files
+  vcf_fields:
+    # from VarDict
+    - CHROM
+    - POS
+    - ID
+    - REF
+    - ALT
+    - QUAL
+    - FILTER
+    - SAMPLE
+    - ADJAF
+    - AF
+    - DP
+    - HIAF
+    - HICNT
+    - HICOV
+    - AMPFLAG
+    - BIAS
+    - DUPRATE
+    - END
+    - GDAMP
+    - LSEQ
+    - MQ
+    - MSI
+    - MSILEN
+    - NCAMP
+    - NM
+    - ODDRATIO
+    - PMEAN
+    - PSTD
+    - QSTD
+    - REFBIAS
+    - RSEQ
+    - SBF
+    - SHIFT3
+    - SN
+    - SPANPAIR
+    - SPLITREAD
+    - TLAMP
+    - TYPE
+    - VARBIAS
+    - VD
+    # dbSNP
+    - dbSNPb151_ID
+    - dbSNPb151_COMMON
+    - dbSNPb151_papu_ID
+    # Gnomad
+    - gnomad_wgs_AF
+    - gnomad_wes_AF
+    # SweGen
+    - swegen_AF
+    # Danish genome
+    - danish_gen_AF

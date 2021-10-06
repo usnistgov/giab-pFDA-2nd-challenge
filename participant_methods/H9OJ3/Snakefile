@@ -1,0 +1,365 @@
+#
+# Pipeline for precisionFDA Truth Challenge v2
+#
+
+from os import mkdir
+from shutil import rmtree
+from glob import glob
+import pandas as pd
+
+
+# Read and validate the config.
+configfile: "config.yaml"
+
+# Read and validate the sample file.
+sample_table = pd.read_table(config["samples"], comment="#")
+samples = list(sample_table[sample_table.columns[0]])
+
+
+onstart:
+        if not os.path.exists("tmp"):
+            mkdir("tmp")
+
+onsuccess:
+        # clean up
+        [os.remove(x) for x in glob("bamsormadup*")]  # Biobambam
+        rmtree(tmp)  # general temp directory
+        print("Workflow completed without errors.")
+
+all_outputs = [
+        # Aligner indexes
+        expand("{genome_fa}.nix", genome_fa=config["genome"]),
+        # FASTQ processing
+        expand("fastq_clean/{sample}_{read}_clean.fastq.gz", sample=samples, read=["R1", "R2"]),
+        # FASTQC
+        expand("fastq_raw_fastqc/{sample}_{read}_fastqc.{fmt}", sample=samples, read=["R1", "R2"], fmt=["html", "zip"]),
+        expand("fastq_clean_fastqc/{sample}_{read}_clean_fastqc.{fmt}", sample=samples, read=["R1", "R2"], fmt=["html", "zip"]),
+        # Alignment
+        expand("bam_markdup/{sample}_markdup.bam.bai", sample=samples),
+        expand("bam_markdup/{sample}_markdup.bam.flagstat", sample=samples),
+        # Depth of Coverage
+        expand("bam_markdup_depth/{sample}_markdup.bam.per-base.bed.gz", sample=samples),
+        expand("bam_markdup_depth/{sample}_markdup.callable.bed", sample=samples),
+        # Variant calling
+        expand("bam_markdup_variants/{sample}_markdup.vcf.gz", sample=samples),
+        # Variant annotation
+        "tmp/all_anno_databases.toml",
+        expand("bam_markdup_variants_annotated/{sample}_markdup_annotated.vcf.gz", sample=samples),
+        expand("bam_markdup_variants_annotated/{sample}_markdup_annotated.vcf.gz.tbi", sample=samples),
+        expand("bam_markdup_variants_annotated/{sample}_markdup_annotated.tsv", sample=samples),
+        expand("bam_markdup_variants_annotated_filtered/{sample}_filtered.vcf.gz", sample=samples),
+]
+
+rule all:
+    input:
+        all_outputs,
+        "metrics/multiqc_report.html"
+
+
+rule install_novoalign_license:
+    output:
+        "tmp/novoalign-license-sentinel.txt"
+    conda:
+        "software.yml"
+    params:
+        license = config["novoalign_license"]
+    shell: """
+novoalign-license-register {params.license} \
+&& \
+touch {output}
+"""
+
+rule align_paired_novoalign:
+    input:
+        "tmp/novoalign-license-sentinel.txt",
+        fq1 = "fastq_clean/{sample}_R1_clean.fastq.gz",
+        fq2 = "fastq_clean/{sample}_R2_clean.fastq.gz"
+    output:
+        "bam_markdup/{sample}_markdup.bam"
+    log:
+        "logs/alignment/align_{sample}.log"
+    conda:
+        "software.yml"
+    threads: 12
+    params:
+        insert_size_mean = 320,
+        insert_size_sd = 160,
+        id = "FDA_Truth_Challenge_v2",
+        center = "PrecisionFDA",
+        platform = "ILLUMINA",
+        genome = config["genome"],
+        sample = "PrecisionFDA",
+        sequencer = "NOVASEQ"
+    shell: """
+novoalign \
+-c {threads} \
+-d {params.genome}.nix \
+-f {input.fq1} {input.fq2} \
+-F ILM1.8 \
+-o SAM "@RG\\tID:{params.id}\\tCN:{params.center}\\tLB:{wildcards.sample}\\tPL:{params.platform}\\tSM:{wildcards.sample}" \
+--tune {params.sequencer} \
+2> {log} \
+| bamsormadup \
+inputformat=sam \
+outputformat=bam \
+threads={threads} \
+SO=coordinate \
+> {output} \
+2>> {log}
+"""
+
+rule fastqc:
+    input:
+        "{path}/{afile}.fastq.gz"
+    output:
+        html = "{path}_fastqc/{afile}_fastqc.html",
+        zip = "{path}_fastqc/{afile}_fastqc.zip"
+    wrapper:
+        "0.26.1/bio/fastqc"
+
+
+rule multiqc:
+    input:
+        all_outputs
+    output:
+        "metrics/multiqc_report.html"
+    log:
+        "logs/qc/multiqc_all.log"
+    conda:
+        "software.yml"
+    params:
+        report_name = "multiqc_report"
+    shell: """
+multiqc \
+--force \
+--outdir `dirname {output}` \
+--filename {params.report_name} \
+* \
+2> {log}
+"""
+
+rule fastp:
+    input:
+        fq1 = "fastq_raw/{sample}_R1.fastq.gz",
+        fq2 = "fastq_raw/{sample}_R2.fastq.gz"
+    output:
+        fq1 = "fastq_clean/{sample}_R1_clean.fastq.gz",
+        fq2 = "fastq_clean/{sample}_R2_clean.fastq.gz",
+        html = "metrics/fastp_{sample}.html",
+        json = "metrics/fastp_{sample}.json"
+    log:
+        main = "logs/fastp/fastp_{sample}.log"
+    threads: 12
+    params:
+        compression = "6",
+        min_read_len = "40",
+    conda:
+        "software.yml"
+    shell: """
+fastp \
+--in1={input.fq1} \
+--in2={input.fq2} \
+--out1={output.fq1} \
+--out2={output.fq2} \
+--compression={params.compression} \
+--thread={threads} \
+--html={output.html} \
+--json={output.json} \
+--length_required={params.min_read_len}
+"""
+
+
+rule bam_flagstat:
+    input:
+        "{path}/{afile}.bam"
+    output:
+        "{path}/{afile}.bam.flagstat"
+    conda:
+        "software.yml"
+    threads: 8
+    shell: """
+samtools flagstat \
+--threads {threads} \
+{input} \
+> {output}
+"""
+
+
+rule index_bam:
+    input:
+        "{path}/{afile}.bam"
+    output:
+        "{path}/{afile}.bam.bai"
+    conda:
+        "software.yml"
+    threads: 8
+    shell: """
+samtools index \
+-@ {threads} \
+{input} \
+{output}
+"""
+
+
+rule bam_depth:
+    input:
+        bam = "{base}_{which}/{sample}_{which}.bam",
+        bai = "{base}_{which}/{sample}_{which}.bam.bai"
+    output:
+        per_base_bed = "{base}_{which}_depth/{sample}_{which}.bam.per-base.bed.gz",
+        callable_regions = "{base}_{which}_depth/{sample}_{which}.callable.bed"
+    conda:
+        "software.yml"
+    threads: 8
+    params:
+        callable_thresh = config["variants"]["callable_threshold"]  # callable when >= this value
+    shell: """
+mosdepth \
+--threads {threads} \
+`dirname {output.per_base_bed}`/{wildcards.sample}_{wildcards.which}.bam \
+{input.bam}
+
+zcat {output.per_base_bed} \
+| awk '$4 > {params.callable_thresh}' \
+| bedtools merge \
+> {output.callable_regions}
+"""
+
+
+rule call_variants_vardict:
+    """
+    Call variants.
+
+    The VAR_DICT_OPTS variable is respected by the vardict-java wrapper
+    shipped with the vardict-java bioconda package.
+    """
+    input:
+        bam = "{path}_{which}/{sample}_{which}.bam",
+        bai = "{path}_{which}/{sample}_{which}.bam.bai",
+        callable_regions = "{path}_{which}_depth/{sample}_{which}.callable.bed"
+    output:
+        "{path}_{which}_variants/{sample}_{which}.vcf.gz"
+    log:
+        "logs/variants/{path}_{which}_variants/vardict_{sample}.log"
+    conda:
+        "software.yml"
+    params:
+        java_ms = "512M",
+        java_mx = "4G",
+        callable_file = config["callable_file"],
+        genome = config["genome"],
+        min_allele_freq = config["variants"]["min_variant_allele_freq"],
+        min_base_qual = config["variants"]["min_base_qual"],
+        min_mapping_qual = config["variants"]["min_mapping_qual"],
+        min_variant_reads = config["variants"]["min_variant_reads"],
+        col_chrom = "1",
+        col_coord_start = "2",
+        col_coord_end = "3",
+        col_name = "4"
+    threads: 8
+    shell: """
+VAR_DICT_OPTS="-Xms{params.java_ms} -Xmx{params.java_mx}" &&
+vardict-java \
+-G {params.genome} \
+-f {params.min_allele_freq} \
+-c {params.col_chrom} \
+-S {params.col_coord_start} \
+-E {params.col_coord_end} \
+-g {params.col_name} \
+-Q {params.min_mapping_qual} \
+-r {params.min_variant_reads} \
+-q {params.min_base_qual} \
+--nosv \
+-b {input.bam} \
+-th {threads} \
+{input.callable_regions} \
+| teststrandbias.R \
+| var2vcf_valid.pl \
+-A \
+-N {wildcards.sample} \
+-f {params.min_allele_freq} \
+| bgzip -c \
+> {output}
+"""
+
+
+rule concat_toml_files:
+    input:
+        tomls = expand(config["variants"]["anno_db_root"] + "/{db}.toml", db=config["variants"]["dbnames"])
+    output:
+        "{dir}/all_anno_databases.toml"
+    shell:
+        "cat {input.tomls} > {output}"
+
+
+rule annotate_variants:
+    input:
+        vcf = "{path}/{sample}.vcf.gz",
+        toml = "tmp/all_anno_databases.toml"
+    output:
+        vcf = "{path}_annotated/{sample}_annotated.vcf.gz",
+        tbi = "{path}_annotated/{sample}_annotated.vcf.gz.tbi"
+    log:
+        "logs/annotation/{path}_annotated/{sample}.log"
+    conda:
+        "software.yml"
+    params:
+        anno_root = config["variants"]["anno_db_root"],
+        contigs = config["contigs"],
+        java_mx = "4G"
+    threads: 8
+    shell: """
+vcfanno \
+-p {threads} \
+-base-path {params.anno_root} \
+{input.toml} \
+{input.vcf} \
+| SnpSift -Xmx{params.java_mx} \
+filter -s {params.contigs} '(CHROM in SET[0])' \
+| bgzip -@ {threads} > {output.vcf} \
+2> {log} \
+&& tabix -p vcf {output.vcf}
+"""
+
+
+rule vcf_to_tsv:
+    input:
+        "{dir}/{sample}.vcf.gz"
+    output:
+        "{dir}/{sample}.tsv"
+    log:
+        "logs/vcf_to_tab/{dir}/{sample}.log"
+    conda:
+        "software.yml"
+    params:
+        fields = config["variants"]["vcf_fields"],
+        java_mx = "4G"
+    shell: """
+zcat {input} \
+| SnpSift -Xmx{params.java_mx} extractFields -s "," -e "." - {params.fields} \
+> {output} \
+2> {log}
+"""
+
+
+rule filter_vcf:
+    input:
+        vcf = "{dir}/{sample}_markdup_annotated.vcf.gz",
+        filter_files = "HG002_GRCh38_1_22_v4.1_draft_benchmark.bed"
+    output:
+        "{dir}_filtered/{sample}_filtered.vcf.gz"
+    conda:
+        "software.yml"
+    params:
+        java_mx = "4G",
+        header_file = "vcfheaders.txt",
+        filter_file = config["filter_file"]
+    shell: """
+bedtools intersect \
+-header \
+-a {input.vcf} \
+-b {input.filter_files} \
+| SnpSift -Xmx{params.java_mx} filter "`grep -v '^#' {params.filter_file}`" \
+| bgzip -c \
+> {output}
+"""

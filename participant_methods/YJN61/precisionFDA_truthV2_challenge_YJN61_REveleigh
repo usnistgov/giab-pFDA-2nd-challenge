@@ -1,0 +1,19 @@
+##PACBIO alignment same parameters for HG002, HG003 and HG004
+#reference b38 from : ftp://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.15_GRCh38/seqs_for_alignment_pipelines.ucsc_ids/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz 
+
+module load mugqic/SMRTLink/8.0.0 && pbmm2 align -j 16 --sort --preset CCS -L 0.1 -c 0 --rg "@RG\tID:HG002\tPL:PACBIO\tDS:READTYPE=CCS\tSM:HG002_35x_PacBio_14kb-15kb\tPM:SEQUELII" Homo_sapiens.GRCh38_primary.fa HG002_35x_PacBio_14kb-15kb.fastq HG002_35x_PacBio_14kb-15kb_primary.sorted.bam
+
+
+##PACBIO variant calling with clair2 v2.1.0 same parameters for HG002, HG003, and HG004
+
+clair.py callVarBamParallel --chkpnt_fn clair/model/pacbio/model --ref_fn Homo_sapiens.GRCh38_primary.fa --bam_fn HG002_35x_PacBio_14kb-15kb.sorted.bam --sampleName HG002 --output_prefix clair2/HG002_pacbio --minCoverage 4 --tensorflowThreads 4 > commandsHG002old.sh && cat commandsHG002old.sh | parallel -j4
+
+##Combine 3 vcfs with bcftools 1.9
+bcftools merge -Oz -o allSamples.pacbio_primary.clair2.vcf.gz HG002_35x_PacBio_14kb-15kb_primary.clair2.vcf.gz HG003_35x_PacBio_14kb-15kb_primary.
+clair2.vcf.gz HG004_35x_PacBio_14kb-15kb_primary.clair2.vcf.gz
+
+##Filter out mendelian inconsistency using bcftools plugin +mendelian v10.2
+bcftools +mendelian -c -d -Oz -t HG004,HG003,HG002 -o allSamples.pacbio_primary.clair2.mic.vcf.gz allSamples.pacbio_primary.clair2.vcf.gz
+
+##Split back to individual sample vcf bcftools plugin +split v10.2
+bcftools +split allSamples.pacbio_primary.clair2.mic.vcf.gz -Oz -o split_pb_mic -i'GT="alt"'
