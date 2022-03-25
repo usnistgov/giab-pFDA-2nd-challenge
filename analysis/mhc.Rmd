@@ -15,6 +15,7 @@ library(tidyverse)
 library(here)
 library(ggrepel)
 library(ggpubr)
+source(here("scripts", "annotation-phredticks.R"))
 ```
 
 # Objective
@@ -23,7 +24,13 @@ Summarize submission performance for MHC region relative to other challenge cate
 
 # Loading and Munging Data 
 ```{r}
+coauthor_subs_df <- here("data-raw", "anonymized_metadata_table.tsv") %>% 
+    read_tsv() %>% 
+    filter(methods_provided == "Y") 
+
 results_df <- read_tsv(here("data","anonymized_challenge_results_v5.txt")) %>% 
+    ## Only including submissions from co-authors
+    semi_join(coauthor_subs_df) %>% 
     mutate(challenge_cat = factor(
         challenge_cat,
         levels = c("Difficult-to-Map Regions",
@@ -76,30 +83,34 @@ results_comp %>%
     arrange(Submission_Name)
 ```
 
+
 ```{r}
 (faceted_plt <- results_comp %>% 
      mutate(alpha = if_else(labeled_subs == "", 0.25, 1)) %>% 
      mutate(Type = if_else(Type == "SNP", "SNV", Type)) %>% 
-    ggplot(aes(x = phred_F1, y = mhc_phred_F1)) + 
+     ggplot(aes(x = phred_F1, y = mhc_phred_F1)) +
     geom_abline(aes(intercept = 0, slope = 1), color = "grey60") + 
     geom_point(aes(fill = Technology, 
                    label = Submission_Name, 
                    alpha = alpha), shape = 21) + 
     geom_text_repel(aes(label = labeled_subs), 
                   na.rm = TRUE, 
+                  max.overlaps = 50,
                   min.segment.length = 0.2,
                   point.padding = 0.25) +
-    scale_x_continuous(breaks = c(0, 10, 20, 30), 
-                   labels=c("0","90","99","99.9")) + 
-    scale_y_continuous(breaks = c(0, 10, 20, 30), 
-                   labels=c("0","90","99","99.9")) + 
+    scale_x_continuous(breaks = c(0, 10, 20, 30),
+                   labels=c("0","90","99","99.9")) +
+    scale_y_continuous(breaks = c(0, 10, 20, 30),
+                   labels=c("0","90","99","99.9")) +
     facet_grid(Type ~ challenge_cat) + 
     theme_bw() + 
     theme(legend.position = "bottom") +
      scale_alpha_continuous(range = c(0.35,1)) +
     scale_fill_brewer(type = "qual", palette = 2) +
-    guides(alpha = FALSE) + 
-    labs(x = "F1% (log)", y = "MHC F1% (log)"))
+    annotation_phredticks(sides = "bl",
+                          scaled = FALSE) +
+    guides(alpha = "none") + 
+    labs(x = "F1%", y = "MHC F1%"))
 ```
 
 ```{r}
@@ -140,22 +151,22 @@ __Key points__
      scale_alpha_continuous(range = c(0.35,1)) +
     scale_fill_brewer(type = "qual", palette = 2) +
     guides(alpha = FALSE) + 
-    labs(x = "F1% (log)", y = "MHC F1% (log)"))
+    labs(x = "F1% (log)", y = "MHC F1%"))
 ```
 
 ```{r}
-ggsave(here("figures","mhc_graph_SNVandINDEL-only.pdf"), graph_plt, width =8, height = 4)
+# ggsave(here("figures","mhc_graph_SNVandINDEL-only.pdf"), graph_plt, width =8, height = 4)
 ```
 
 
 # Exploratory Plots
-```{r}
+```{r include=FALSE}
 results_df %>% 
     ggplot() + geom_point(aes(x = Submission_Name, y = phred_F1, shape = Technology, color = Type)) + 
     facet_grid(.~challenge_cat)
 ```
 
-```{r}
+```{r include=FALSE}
 ggdotchart(filter(results_df, challenge_cat == "MHC"),
            x = "Submission_Name", y = "phred_F1",
            color = "Type",                                # Color by groups
@@ -179,7 +190,7 @@ ggdotchart(filter(results_df, challenge_cat == "MHC"),
 ```
 
 ## Scatter Plots
-```{r}
+```{r include=FALSE}
 all_v_MHC <- results_df %>% 
     select(`Participant(s)`, Technology, Multi_Details, Submission_Name, 
            Type, challenge_cat, phred_F1) %>% 
@@ -204,21 +215,21 @@ all_v_MHC <- results_df %>%
 ```
 
 ### Combined Plots
-```{r}
-(combined_plt <- ggarrange(all_v_MHC, diff_v_MHC, 
-                          nrow = 2, 
-                           labels = "AUTO", 
-                            common.legend = TRUE, legend = "bottom"))
+```{r include=FALSE}
+# (combined_plt <- ggarrange(all_v_MHC, diff_v_MHC, 
+#                           nrow = 2, 
+#                            labels = "AUTO", 
+#                             common.legend = TRUE, legend = "bottom"))
 ```
 
 ### Interactive Plots
-```{r}
+```{r include=FALSE}
 
-plotly::ggplotly(all_v_MHC)
+# plotly::ggplotly(all_v_MHC)
 ```
 
-```{r}
-plotly::ggplotly(diff_v_MHC)
+```{r include=FALSE}
+# plotly::ggplotly(diff_v_MHC)
 ```
 
 # Session Information

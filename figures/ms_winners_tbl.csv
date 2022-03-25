@@ -1,14 +1,14 @@
-Technology,Genomic Region,Participant,F1
-MULTI,All Benchmark Regions,Sentieon,0.999
-MULTI,All Benchmark Regions,Roche Sequencing Solutions,0.9989
-MULTI,Difficult-to-Map Regions,Roche Sequencing Solutions,0.9944
-MULTI,MHC,Sentieon,0.9979
-ILLUMINA,All Benchmark Regions,DRAGEN,0.9971
-ILLUMINA,Difficult-to-Map Regions,DRAGEN,0.9693
-ILLUMINA,MHC,Seven Bridges Genomics,0.9923
-PACBIO,All Benchmark Regions,The Genomics Team in Google Health,0.9983
-PACBIO,Difficult-to-Map Regions,Sentieon,0.9929
-PACBIO,MHC,Sentieon,0.9949
-ONT,All Benchmark Regions,The UCSC CGL and Google Health,0.9651
-ONT,Difficult-to-Map Regions,The UCSC CGL and Google Health,0.9825
-ONT,MHC,Wang Genomics Lab,0.9717
+Technology,Genomic Region,Participant,F1,Recall,Precision
+MULTI,Difficult-to-Map Regions,Roche Sequencing Solutions,0.9944,0.9925,0.9964
+MULTI,All Benchmark Regions,Sentieon,0.999,0.999,0.999
+MULTI,All Benchmark Regions,Roche Sequencing Solutions,0.9989,0.9987,0.9991
+MULTI,MHC,Sentieon,0.9979,0.9978,0.9979
+ILLUMINA,Difficult-to-Map Regions,DRAGEN,0.9693,0.9609,0.9779
+ILLUMINA,All Benchmark Regions,DRAGEN,0.9971,0.9965,0.9977
+ILLUMINA,MHC,Seven Bridges Genomics,0.9923,0.9885,0.9961
+PACBIO,Difficult-to-Map Regions,Sentieon,0.9929,0.9914,0.9945
+PACBIO,All Benchmark Regions,The Genomics Team in Google Health,0.9983,0.9983,0.9983
+PACBIO,MHC,Sentieon,0.9949,0.9927,0.9972
+ONT,Difficult-to-Map Regions,The UCSC CGL and Google Health,0.9825,0.9765,0.9885
+ONT,All Benchmark Regions,The UCSC CGL and Google Health,0.9651,0.9474,0.9836
+ONT,MHC,Wang Genomics Lab,0.9717,0.9641,0.9795

@@ -1,0 +1,465 @@
+---
+title: "Generate Table with Submission Metadata"
+date: '`r Sys.Date()`'
+output: 
+    bookdown::html_document2:
+        toc: true
+        toc_float: true
+        df_print: paged
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyverse)
+library(here)
+library(fs)
+```
+
+
+# Objective
+Generate metadata tables with submission information, including anonymized participant name and Submission name, and submission id. 
+
+The submission id is the unique anonymized identifier the pFDA team created for the anonymized dataset. 
+
+# Loading Data
+```{r}
+## Anonymized ID and submission files
+anon_map_df <- read_excel(here("data-raw", "intermediate_metadata", 
+                               "FinalTruthExtractedAnonMap.xlsx"))
+
+## Partially anonymized results table
+anon_results_df <- read_tsv(here("data",  
+                                   "anonymized_challenge_results_v5.txt"))
+
+## Submission Metadata
+sub_metadata_df <- read_csv(here("data-raw", "intermediate_metadata", 
+                                 "submission_metadata.csv"))
+
+## Variant Caller Classifications
+variant_caller_cat_df <- read_excel(here("data-raw","intermediate_metadata",
+                                         "submission_variant_caller_cat.xlsx"))
+```
+
+
+## Non-anonymized metadata submission table
+__Columns__
+ID - randomized submission ID
+Name - Name of individual who completed the submission
+Participant - Non-anonymized challenge participants
+Submission_Name - Non-anonymized challenge submission names
+
+__TODO__ Add Participant / Team names
+```{r}
+metadata_tbl <- anon_map_df %>% 
+    select(ID, Name, Submission_Name) %>% 
+    distinct()
+```
+
+__Adding Variant Caller Info__
+Created tsv file with ID and variant caller info then manually annotated with variant caller classifications
+```{r eval = FALSE}
+# ## Creating spreadsheet for manual variant caller classification
+# tech_df <- anon_map_df %>% 
+#   select(ID, Technology, Multi_Details) %>% 
+#   distinct()
+# 
+# var_class_df <- sub_metadata_df %>%
+#   rename(Name = Submitter, Submission_Name = `Submission(s)`) %>%
+#   left_join(metadata_tbl) %>%
+#   mutate(variant_caller = str_replace(`Variant Caller(s)`, "\n", ",")) %>% 
+#   select(-Technology) %>% 
+#   full_join(tech_df) %>% 
+#   select(ID, Name, Submission_Name, Technology, 
+#          Multi_Details, variant_caller) # %>% 
+#     # write_tsv(here("data", "submission_variant_caller.tsv"))
+```
+
+
+
+
+
+
+## Anonymized Metadata Table
+__Columns__  
+ID - randomized submission ID
+Participant - Challenge participant name, ID for submissions from individuals/teams who wish to remain anonymous. 
+Submission_Name - Unique submission name based on methods used, ID for submissions from individuals/teams who wish to remain anonymous. 
+Technology - Sequencing dataset used
+Multi_Details - datasets used for submissions utilizing multiple technologies
+
+```{r}
+var_cat_df <- variant_caller_cat_df %>% 
+  select(ID, caller_cat)
+
+anon_metadata_tbl <- anon_results_df %>% 
+    rename(Participant = `Participant(s)`) %>% 
+    select(Participant, Submission_Name, Technology, Multi_Details) %>% 
+    distinct() %>% 
+    left_join(metadata_tbl) %>%
+  mutate(ID = if_else(is.na(ID), Participant, ID)) %>%
+  select(ID, Participant, Submission_Name, Technology, Multi_Details) %>%
+  full_join(var_cat_df)
+```
+
+
+__Writing Metadata Table to File__
+```{r}
+# write_tsv(anon_metadata_tbl, here("data-raw","anonymized_metadata_table.tsv"))
+```
+
+
+## File Renaming
+
+### extended csvs
+
+Renaming `extracted.csv` files to using randomized IDs and GIAB IDs in place of non-anonymized file names.
+
+- Replace HG_Num with HG002/3/4 and use `ID_HG00#.extended.csv` naming convention. Keeping files in directories based on ID.
+```{r eval = FALSE}
+extendedcsv_files_df <- anon_map_df %>% 
+    mutate(giab_id = str_c("HG00", HG_Num)) %>% 
+    select(ID, Submission_Name, giab_id, Participant_File) %>% 
+    mutate(anon_filename = str_c(ID,"_", giab_id,".extended.csv"),
+           anon_filepath = here("data","extended_csvs",ID, anon_filename))
+```
+
+__Get file md5s__
+```{r eval = FALSE}
+submission_md5s <- here("data-raw",
+                        extendedcsv_files_df$Participant_File) %>% 
+    tools::md5sum()
+```
+
+
+__Copy files to `data/ID/anon_filename`__
+```{r eval=FALSE}
+## Directories for extended csvs by submission ID
+extendedcsv_files_df$ID %>% 
+    unique() %>% 
+    walk(
+        ~fs::dir_create(here("data","extended_csvs", .), 
+                        recurse = TRUE)
+    )
+
+
+## Copy extended csvs to new directory and rename
+participant_filepath <- here("data-raw", extendedcsv_files_df$Participant_File)
+
+walk2(here("data-raw", extendedcsv_files_df$Participant_File),
+      extendedcsv_files_df$anon_filepath,
+      fs::file_copy, overwrite = TRUE)
+```
+
+
+__Get new file md5s__
+```{r eval = FALSE}
+renamed_md5s <- tools::md5sum(extendedcsv_files_df$anon_filepath)
+```
+
+__Verify MD5s__
+```{r eval = FALSE}
+all(submission_md5s == renamed_md5s)
+```
+MD5s are consistent. Will want to verify input extended csv files.
+
+### Renaming files downloaded from precisionFDA
+Renaming `extracted.csv` and `vcf` files using randomized IDs and GIAB IDs in place of non-anonymized file names.
+
+
+Making sure all vcfs are bgzipped
+```
+for i in */*/*{vcf,/*vcf}; do bgzip ${i}; done
+```
+
+```{r}
+dwnload_dir <- here("data-raw", "precisionFDA_challenge_files")
+```
+
+- Replace HG_Num with HG002/3/4 and use `ID_HG00#.vcf.gz` naming convention. Keeping files in directories based on ID.
+
+```{r}
+anon_map_df
+```
+
+
+```{r}
+dwnloaded_files_df <- list.files(dwnload_dir, 
+                              pattern = "vcf.gz",  
+                              include.dirs = TRUE, 
+                              recursive = TRUE) %>% 
+  as_tibble() %>% 
+  rename(local_path = value) %>% 
+  mutate(file_name = str_remove(local_path, ".*/")) %>% 
+  mutate(`Submitter ID` = str_extract(local_path, "(?<=[AaIlOoT]/)[^/]*(?=/)"),
+         `Submitter ID` = str_replace(`Submitter ID`, "_", " "),
+         `Submitter ID` = str_to_title(`Submitter ID`)) %>% 
+  mutate(`Submitter ID` = case_when(`Submitter ID` == "Konstantinos Kyriakidis" ~ "Konstantinos kyriakidis",
+                                    `Submitter ID` == "Mianumair Ahsan" ~ "Mian Umair Ahsan",
+                                    `Submitter ID` == "Sinem Demirkayabudak" ~ "Sinem Demirkaya-Budak",
+                                    TRUE ~ `Submitter ID`))
+
+vcf_file_names_df <- read_excel(here("data-raw", "intermediate_metadata", "TruthV2_participant_files.xlsx")) %>% 
+  select(`Submitter ID`, `Submisision name`, 
+         `HG002 files`, `HG003 files`, `HG004 Files`) %>%
+  pivot_longer(cols = contains("files"),
+               names_to = "giab_id", values_to = "file_name") %>% 
+  filter(!is.na(file_name)) %>% 
+  mutate(`Submitter ID` = str_trim(`Submitter ID`)) %>% 
+  rename(Submission_Name = `Submisision name`) %>% 
+  mutate(file_name = str_replace(file_name, "vcf$", "vcf.gz"))
+    
+
+merged_files_df <- full_join(dwnloaded_files_df, vcf_file_names_df)
+```
+
+__TODO__
+- Fixing inconsistencies:  Varjun Jain VCFs and output.tar.gz (downloaded files on laptop)
+- get submission ids: fix issue with non-matching files/ submissions, some likely issues with Name and Submission discrepancies
+- workout file paths - just need to update for running on laptop, maybe use symlinks so you can use `here` for managing file paths
+- rename and md5 checks
+
+__Sanity Checks__
+Sanity checks should all be empty
+```{r}
+merged_files_df %>% filter(is.na(giab_id))
+```
+```{r}
+merged_files_df %>% 
+  count(local_path) %>% filter(n != 1)
+```
+
+
+__Data frame for renaming files__
+
+```{r}
+vcf_rename_df <- anon_map_df %>% 
+  select(ID, Name, Technology, Submission_Name) %>% 
+  rename(`Submitter ID` = Name) %>% 
+  mutate(`Submitter ID` = if_else(`Submitter ID` == "Sinem Demirkayabudak", "Sinem Demirkaya-Budak", 
+                                  `Submitter ID`)) %>% 
+full_join(merged_files_df) %>%
+  ## Update the following code as needed and verify giab ids match
+  mutate(giab_id = str_remove(giab_id, " [Ff]iles")
+         ) %>%
+  select(ID, `Submitter ID`, Submission_Name, giab_id, local_path, Technology) %>% 
+  distinct() %>% 
+  mutate(
+    anon_filename = str_c(ID, "_", giab_id, ".vcf.gz"),
+    anon_filepath = here("data", "submission_vcfs", ID, anon_filename)
+  ) 
+``` 
+
+Should be all 3
+```{r}
+vcf_rename_df %>% 
+  count(ID, `Submitter ID`) %>% 
+  arrange(n) %>% 
+  filter(n != 3)
+```
+
+```{r}
+vcf_rename_df%>% 
+  filter(is.na(local_path))
+```
+
+__Get file md5s__
+```{r }
+submission_vcf_md5s <- vcf_rename_df$local_path %>% 
+  map(~here("data-raw", "precisionFDA_challenge_files", .)) %>% 
+  map(tools::md5sum)
+```
+
+
+__Copy files to `data/ID/anon_filename`__
+```{r }
+## Directories for extended csvs by submission ID
+vcf_rename_df$ID %>% 
+    unique() %>% 
+    walk(
+        ~fs::dir_create(here("data","submission_vcfs", .), 
+                        recurse = TRUE)
+    )
+
+
+## Copy extended csvs to new directory and rename
+submission_paths <- vcf_rename_df$local_path %>% 
+  map(~here("data-raw", "precisionFDA_challenge_files", .))
+
+walk2(submission_paths,
+     vcf_rename_df$anon_filepath,
+      fs::file_copy, overwrite = TRUE)
+```
+
+
+__Get new file md5s__
+```{r}
+renamed_md5s <- tools::md5sum(vcf_rename_df$anon_filepath)
+```
+
+__Verify MD5s__
+```{r}
+all(submission_vcf_md5s == renamed_md5s)
+```
+
+MD5s are consistent. Will want to verify input extended csv files.
+
+## Benchmarking Output Tarballs 
+Extracting and naming `roc.all` files from challenge benchmarking results tar balls.
+
+```{r}
+dwnload_dir <- "/Volumes/ThunderBlade/precisionFDA_challenge_files/"
+```
+
+- Replace HG_Num with HG002/3/4 and use `ID_HG00#.extended.csv` naming convention. Keeping files in directories based on ID.
+
+### Generate Table for file renaming
+```{r}
+dwnloaded_files_df <- list.files(dwnload_dir, 
+                              pattern = "tar.gz",  
+                              include.dirs = TRUE, 
+                              recursive = TRUE) %>% 
+  as_tibble() %>% 
+  rename(local_path = value) %>% 
+  mutate(file_name = str_remove(local_path, ".*/")) %>% 
+  mutate(`Submitter ID` = str_extract(local_path, "(?<=[AaIlOoT]/)[^/]*(?=/)"),
+         `Submitter ID` = str_replace(`Submitter ID`, "_", " "),
+         `Submitter ID` = str_to_title(`Submitter ID`)) %>% 
+  mutate(`Submitter ID` = case_when(`Submitter ID` == "Konstantinos Kyriakidis" ~ "Konstantinos kyriakidis",
+                                    `Submitter ID` == "Mianumair Ahsan" ~ "Mian Umair Ahsan",
+                                    `Submitter ID` == "Sinem Demirkayabudak" ~ "Sinem Demirkaya-Budak",
+                                    TRUE ~ `Submitter ID`))
+
+roc_file_names_df <- read_excel(here("data-raw", 
+                                     "intermediate_metadata", 
+                                     "TruthV2_participant_files.xlsx")
+                                ) %>% 
+  select(`Submitter ID`, `Submisision name`, 
+         `HG002 files`, `HG003 files`, `HG004 Files`) %>%
+  pivot_longer(cols = contains("files"),
+               names_to = "giab_id", values_to = "file_name") %>% 
+  filter(!is.na(file_name)) %>% 
+  mutate(file_name = if_else(file_name == "hg002_pacbio_bwa_altware_sort_dv_pass.vcf.gz", # dataset file name inconsistent between spreadsheet and downloaded files.
+                             "hg002_pacbio_bwa_altware_sort_dv.vcf.gz",
+                             file_name),
+         file_name = str_replace(file_name, ".vcf.*", "_output.tar.gz"),
+        `Submitter ID` = str_trim(`Submitter ID`)) %>% 
+  rename(Submission_Name = `Submisision name`)
+    
+
+merged_files_df <- full_join(dwnloaded_files_df, roc_file_names_df)
+```
+
+__Table QC__ Mismatching names for Li Gen dataset, will exclude for now as unlikely to use for QUAL calibration analysis.
+```{r}
+merged_files_df %>% 
+  filter(is.na(Submission_Name))
+```
+```{r}
+merged_files_df %>% 
+  filter(is.na(local_path))
+```
+
+```{r}
+merged_files_df %>% 
+  count(local_path) %>% filter(n != 1)
+```
+
+New file names
+
+```{r}
+outdir_path = "/Users/nolson/Projects/giab-ai_calibration/data/pFDA_challenge_data"
+roc_rename_df <- anon_map_df %>% 
+  select(ID, Name, Technology, Submission_Name) %>% 
+    mutate(Name = if_else(Name == "Annamette Hein", "Annemette Hien", Name)) %>% 
+  rename(`Submitter ID` = Name) %>% 
+full_join(merged_files_df) %>%
+  mutate(giab_id = str_remove(giab_id, " [Ff]iles")) %>%
+  select(ID, `Submitter ID`, Submission_Name, giab_id, local_path, Technology) %>% 
+  distinct() %>% 
+  mutate(
+    roc_filename = str_c(ID, "_", giab_id, ".roc.all.csv.gz"),
+    roc_filepath = file.path(outdir_path, ID, roc_filename)
+  ) %>% 
+  ## Excluding problematic datasets - with inconsistent names that don't match
+  filter(!(`Submitter ID` %in% c("Annemette Hien", "Zhenxian Zhang", "Zhenxian Zheng", "Sinem Demirkayabudak")))
+```
+
+
+```{r}
+roc_rename_df %>% 
+  count(ID, `Submitter ID`) %>% 
+  arrange(n) %>% filter(n != 3)
+```
+
+```{r}
+roc_rename_df%>% 
+  filter(is.na(local_path))
+```
+
+
+#### Moving ROC ALL Files
+Ran into a few errors while copying. 
+__Copy files to `data/ID/anon_filename`__
+```{r eval=FALSE}
+roc_outdirs <- roc_rename_df$ID %>% 
+  map_chr(~paste(outdir_path, ., sep = "/"))
+  
+
+tar_paths <- paste0(dwnload_dir, roc_rename_df$local_path)
+
+## Make directories in AI calibration repo for file
+walk(roc_outdirs, dir_create, recurse = TRUE)
+
+## Extract 
+roc_filename <- "results/result_1.roc.all.csv.gz"
+extract_roc_file <- function(tarfile, out_path, roc_filename){
+  
+  print(str_c("Processing: ", out_path))
+  if(file_exists(out_path)){
+    ## Skipping if already extracted
+    return()
+  }
+  
+  if(tarfile == "/Volumes/ThunderBlade/precisionFDA_challenge_files/Illumina/varun_jain/HG002_output.tar.gz"){
+    ## Skipping bad file
+    return()
+  }
+  
+  ## Extract file from tarball
+  outdir <- path_dir(out_path)
+  untar(tarfile =  tarfile, files = roc_filename, exdir = outdir)
+  
+  ## Renaming file
+  in_path <- file.path(outdir, roc_filename)
+  if(file_exists(in_path)){
+    fs::file_move(in_path, out_path)  
+  } else {
+    print(str_c("tar extraction failed for: ", tarfile))
+    return()
+  }
+  
+  ## Removing empty results dir
+  dir_delete(file.path(outdir, "results"))
+}
+  
+walk2(tar_paths, roc_rename_df$roc_filepath, extract_roc_file, roc_filename)
+
+```
+
+
+# Session Information
+## System Information
+```{r}
+sessioninfo::platform_info()
+```
+
+
+## Package Versions
+```{r}
+sessioninfo::package_info() %>% 
+    filter(attached = TRUE) %>% 
+    select(package, loadedversion, date, source) %>%
+    knitr::kable(booktabs = TRUE, row.names = FALSE)
+```

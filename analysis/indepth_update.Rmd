@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(ggrepel)
+source(here("scripts", "annotation-phredticks.R"))
 ```
 
 # Objective
@@ -170,15 +171,15 @@ scatter_plt_df <- wide_strat_results_df %>%
     scatter_plt <- scatter_plt_df %>%
         ggplot() +
         geom_abline(aes(intercept = 0, slope = 1)) +
-    geom_point(
-        aes(
-            x = pepper,
-            y = update,
-            fill = strat_group,
-            label = strat_id
-        ),
-        shape = 21
-    ) +
+        geom_point(
+            aes(
+                x = pepper,
+                y = update,
+                fill = strat_group,
+                label = strat_id
+            ),
+            shape = 21
+        ) +
         geom_text_repel(
             point.padding = 0.25,
             aes(x = pepper,
@@ -186,12 +187,13 @@ scatter_plt_df <- wide_strat_results_df %>%
                 label = labeled_strats),
             size = 2,
             na.rm = TRUE,
-            min.segment.length = 0.2
+            min.segment.length = 0.2,
+            max.overlaps = 50
         ) +
         facet_grid(metric ~ Type) +
         theme_bw() +
-        labs(x = "Challenge Submission % (log)",
-             y = "Updated Version % (log)",
+        labs(x = "Challenge Submission %",
+             y = "Updated Version %",
              fill = "Stratification\nCategory") +
         scale_x_continuous(
             breaks = c(0, 10, 20, 30, 40),
@@ -200,16 +202,18 @@ scatter_plt_df <- wide_strat_results_df %>%
         scale_y_continuous(
             breaks = c(0, 10, 20, 30, 40),
             labels = c("0", "90", "99", "99.9", "99.99")
-        ) + 
-        scale_fill_brewer(type = "qual", palette = 3) + 
-        coord_equal() + 
-    theme(
-        strip.text.y = element_text(angle = 360),
-        legend.position = "bottom"
-    ) +
+        ) +
+        annotation_phredticks(sides = "lb", outside = TRUE,
+                          scaled = FALSE) +
+        scale_fill_brewer(type = "qual", palette = 3) +
+        coord_equal(clip = "off") +
+        theme(
+            strip.text.y = element_text(angle = 360),
+            legend.position = "bottom"
+        ) +
         guides(fill = guide_legend(
             title.position = "left", nrow = 2
-        )) 
+        ))
 )
 ```
 
@@ -221,217 +225,9 @@ plotly::ggplotly(scatter_plt)
 ```
 
 
-## Plot for JIMB presentation
-```{r}
-(
-    scatter_plt <- scatter_plt_df %>%
-        filter(metric == "F1") %>% 
-        ggplot() +
-        geom_abline(aes(intercept = 0, slope = 1)) +
-        # geom_linerange(
-        #     data = filter(scatter_plt_df, Subset == "*"),
-        #     aes(
-        #         x = illdv,
-        #         ymin = 0,
-        #         ymax = pepper,
-        #     ),
-        #     linetype = 2,
-        #     show.legend = FALSE
-        # ) +
-        # geom_segment(
-    #     data = filter(scatter_plt_df, Subset == "*"),
-    #     aes(
-    #         x = 0,
-    #         xend = illdv,
-    #         y = pepper,
-    #         yend = pepper,
-    #     ),
-    #     linetype = 2,
-    #     show.legend = FALSE
-    # ) +
-    geom_point(
-        aes(
-            x = illdv,
-            y = pepper,
-            fill = strat_group,
-            label = strat_id
-        ),
-        shape = 21
-    ) +
-        geom_text_repel(
-            point.padding = 0.25,
-            aes(x = illdv,
-                y = pepper,
-                label = labeled_strats),
-            size = 2,
-            na.rm = TRUE,
-            min.segment.length = 0.2
-        ) +
-        facet_grid(metric ~ Type) +
-        theme_bw() +
-        labs(x = "ILL DeepVariant % (log)",
-             y = "ONT PEPPER-DeepVariant % (log)",
-             fill = "Stratification Group") +
-        scale_x_continuous(
-            breaks = c(0, 10, 20, 30, 40),
-            labels = c("0", "90", "99", "99.9", "99.99")
-        ) +
-        scale_y_continuous(
-            breaks = c(0, 10, 20, 30, 40),
-            labels = c("0", "90", "99", "99.9", "99.99")
-        ) + 
-        scale_fill_brewer(type = "qual", palette = 3) + 
-        coord_equal() + 
-    theme(
-        strip.text.y = element_text(angle = 360),
-        legend.position = "bottom"
-    ) +
-        guides(fill = guide_legend(
-            title.position = "left", nrow = 2
-        )) 
-)
-```
-
-```{r}
-ggsave(here("figures","indepth_analysis_F1_only.pdf"), scatter_plt, height = 4, width = 8, dpi = "retina")
-```
-
-## Exploratory Plots
-
-```{r}
-bar_plt_df <- strat_results_df %>%
-        ## Reducing the number of plotted stratifications
-        filter(strat_group != "GCcontent",
-               strat_group != "FunctionalTechnicallyDifficultRegions",
-               strat_group != "FunctionalRegions",
-               strat_group != "union",
-               str_detect(strat_id, "di|tri|quadTR", negate = TRUE),
-               str_detect(strat_id, "All|notin", negate = TRUE),
-               !strat_id %in% c("Gaps", "TR >10kb","VDJ", 
-                                "Contigs <500kb", "High Coverage SegDups"))
-
-bar_plt_df %>% 
-    ggplot() + geom_bar(aes(x = strat_id, y = phred_value, fill = caller),
-                        stat = "identity", position = "dodge") +
-    facet_grid(Type*metric~strat_group, scales = "free", space = "free") + 
-    theme_bw() + 
-    theme(axis.text.x = element_text(angle = -45, hjust = 0)) + 
-    labs(fill = "Variant Caller", x = "Stratification", y = "Metric % (log)")
-```
 
 
 
-
-
-__Key Points__  
-
-- In combination with advances in ONT basecalling and the application of ML-based variant calling methods ONT variant callsets have comparable overalll performance to the Ill DeepVariant callset for SNPs.  
-- SNP F1 PEPPER = 99.64%, DV = 99.57%
-- INDEL F1 PEPPER = 72.54%, DV = 99.59%
-
-- ILL DV better for smaller tandem repeats in SNPs.  
-- ONT/ PEPPER consistently higher performance for difficult regions including segdups, low mappability, and large tandem repeats.  
-- Ill DeepVariant INDEL variant calls are more accurate the the ONT based calls for nearly all genomic context. For INDELs ONT better in low mappability and L1H  
-
-
-Overall performance
-```{r}
-results_df %>% filter(Subtype == "*", Subset == "*", 
-                      str_detect(callset, "HG002", negate = TRUE)) %>% 
-    separate(callset, into = c("caller","giab_id"), sep = "_") %>% 
-    group_by(caller, Type) %>% 
-    summarise(METRIC.Recall = exp(mean(log(METRIC.Recall))),
-              METRIC.Precision = exp(mean(log(METRIC.Precision))),
-              METRIC.F1_Score = exp(mean(log(METRIC.F1_Score)))) %>% 
-    arrange(Type)
-```
-
-__TODO__ Add Precision and Recall Metrics, plot combined parents  
-
-__Summary Table__
-```{r}
-wide_callset_results_df %>% 
-    mutate(diff = pepper - illdv) %>% 
-    group_by(Type, Subset) %>% 
-    summarise(pepper = mean(pepper, na.rm = TRUE),
-              illdv = mean(illdv, na.rm = TRUE),
-              diff = mean(diff)) %>% 
-    arrange(Type, diff) %>% 
-    DT::datatable(rownames = FALSE)
-```
-
-
-# Exploratory Figures
-
-
-```{r}
-results_df %>% 
-    left_join(strat_metadata_df) %>% 
-    filter(strat_group != "GenomeSpecific") %>% 
-    ggplot() + 
-        geom_point(aes(x = strat_id, y = phred_F1, color = callset)) + 
-        facet_grid(strat_group~Type, scales = "free", space = "free") + coord_flip()
-
-```
-
-```{r}
-(
-    scatter_plt <- wide_callset_results_df %>%
-        ggplot() +
-        geom_abline(aes(intercept = 0, slope = 1)) +
-        geom_linerange(
-            data = filter(wide_callset_results_df, Subset == "*"),
-            aes(
-                x = illdv,
-                ymin = 0,
-                ymax = pepper,
-                color = giab_id
-            ),
-            show.legend = FALSE
-        ) +
-        geom_segment(
-            data = filter(wide_callset_results_df, Subset == "*"),
-            aes(
-                x = 0,
-                xend = illdv,
-                y = pepper,
-                yend = pepper,
-                color = giab_id
-            ),
-            show.legend = FALSE
-        ) +
-        geom_path(aes(x = illdv, y = pepper, group = Subset)) + 
-        geom_point(aes(
-            x = illdv,
-            y = pepper,
-            fill = giab_id,
-            label = Subset
-        ), shape = 21) +
-        facet_grid(strat_group ~ Type) +
-        theme_bw() + 
-        labs(x = "ILL DeepVariant F1% (log)",
-             y = "ONT PEPPER F1% (log)",
-             fill = "GIAB ID") + 
-        theme(strip.text.y = element_text(angle = 360), 
-              legend.position = "bottom")
-)
-```
-
-```{r}
-plotly::ggplotly(scatter_plt)
-```
-
-```{r}
-strat_results_df %>% 
-    filter(str_detect(strat_id, "GC", negate = TRUE),
-           str_detect(strat_id, "notin", negate = TRUE)) %>% 
-    ggplot() + 
-    geom_point(aes(x = strat_id, y = phred_value, fill = caller), shape = 21) +
-    facet_grid(metric~Type) +
-    theme_bw() + 
-    theme(axis.text.x = element_text(angle = 90))
-    
-```
 # Session Information
 ## System Information
 ```{r}

@@ -1,0 +1,197 @@
+---
+title: "pFDA 2nd Truth Challenge Indel Size Performance Analysis"
+date: '`r Sys.Date()`'
+output: 
+    bookdown::html_document2:
+        toc: true
+        toc_float: true
+        df_print: paged
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(readxl)
+library(sessioninfo)
+source(here("scripts", "annotation-phredticks.R"))
+```
+
+# Objective
+Summarize variant calling performance by indel size bins.
+
+# Approach
+1. Munge data - generate tidy data set with INDEL performance by size bins for individual genomes.
+1. Calculate parents harmonic mean performance by submission
+1. Plot performance metrics by indel size bins.
+
+# Analysis
+## Loading and Munging Data
+
+### Submission Metadata
+```{r}
+sub_metadata <- read_tsv( here( "data-raw", "anonymized_metadata_table.tsv" ) )  %>% 
+    select(ID, Submission_Name, Technology, Multi_Details, caller_cat)
+```
+
+### Combining Extended CSVs
+Generating data frame with extended benchmarking results for all submissions.
+
+```{r}
+submission_files <- list.files(path = here("data","extended_csvs"), 
+                               pattern = "extended.csv", 
+                               full.names = TRUE, 
+                               recursive = TRUE)
+
+## Defining col types to avoid ti/tiv logical issues
+ctypes <- str_c(c(rep("c", 7), rep("d", 9), rep("dccddcd", 7)), 
+                sep = "", collapse = "")
+
+combined_extended_df <- submission_files %>% 
+    set_names(str_extract(., "(?<=extended_csvs/[:alnum:]{5}/).*(?=.extended.csv)")) %>% 
+    map_dfr(read_csv, col_types = ctypes, .id = "vcf_id")
+```
+
+```{r}
+glimpse(combined_extended_df)
+```
+
+
+### Annotating and Cleaning Data Frame
+Adding metadata
+```{r}
+combined_extended_anno_df <- 
+    combined_extended_df %>% 
+    separate(vcf_id, into = c("ID", "giab_id")) %>% 
+    right_join(sub_metadata)
+```
+
+Subsetting data frame to rows and columns of interest
+
+```{r}
+## Extracting columns of interest
+results_metrics_df <- combined_extended_anno_df %>%
+    select(
+        ID,
+        Technology,
+        Multi_Details,
+        Submission_Name,
+        giab_id,
+        Type,
+        Subtype,
+        Subset,
+        Filter,
+        METRIC.Precision,
+        METRIC.Recall,
+        METRIC.F1_Score
+    )
+
+## Extracting rows of interest
+indel_results_df <- results_metrics_df %>%
+    filter(
+        Type == "INDEL",
+        Subset %in% c(
+            "*",
+            "GRCh38_MHC.bed.gz",
+            "GRCh38_alllowmapandsegdupregions.bed.gz"
+        ),
+        Filter == "PASS"
+    ) %>% 
+    select(-Filter)
+
+glimpse(indel_results_df)
+```
+
+## Calculating Harmonic Means
+```{r}
+indel_results_geomean_df <- indel_results_df %>% 
+    filter(giab_id != "HG002") %>% 
+    ## Reducing metadata - will add back later
+    select(-Multi_Details, - Submission_Name) %>% 
+    gather(key = "metric", value = "value", 
+           -ID, -giab_id, -Technology, -Type, -Subtype, -Subset) %>% 
+    group_by(ID, Type, Technology, Subtype, Subset, metric) %>%
+     ## Replacing 0 and NA values with a defined value
+     mutate(value = if_else(value > 0, value, 0.00000001)) %>% 
+    summarise(value = exp(mean(log(value))))
+```
+```{r}
+glimpse(indel_results_geomean_df)
+```
+
+## Summary Plots
+```{r}
+indel_df <- indel_results_geomean_df %>% 
+    filter(str_detect(Subtype, "^C", negate = TRUE), # Excluding complex variants
+           Subtype != "*", # Excluding overall indel performance
+           Subset == "*") %>%  # Only looking at performance for all benchmark regions
+    mutate(indel_size = factor(Subtype,
+                               levels = c("D16_PLUS",
+                                          "D6_15",
+                                          "D1_5",
+                                          "I1_5",
+                                          "I6_15",
+                                          "I16_PLUS"),
+                               labels = c("-16 to -49 bp",
+                                          "-6 to -15",
+                                          "-1 to -5",
+                                          "1 to 5",
+                                          "6 to 15",
+                                          "16 to 49 bp"))) %>% 
+    mutate(metric = factor(metric, labels = c("F1", "Precision", "Recall"))) %>% 
+    mutate(phred_value = -10*log(1-value)/log(10))
+
+```
+
+
+_Initial Observations_
+
+- Performance for Ill and Multi generally higher for smaller indels.
+- ONT indel performance slightly higher for larger indels.
+- PacBio performance less dependent on indel size.
+```{r fig.cap = "F1 score by INDEL size for individual submissions.", fig.height = 6}
+(indel_overview_plt <- ggplot(indel_df, aes(x = indel_size, y = phred_value)) +
+    geom_point(aes(fill = Technology), shape = 21) +
+    geom_line(aes(
+        x = as.numeric(indel_size),
+        color = Technology,
+        group = ID),
+        alpha = 0.5
+    ) +
+    geom_point(aes(fill = Technology), shape = 21) +
+scale_y_continuous(breaks = c(0, 10, 20, 30),
+                       labels=c("0","90","99","99.9")) +
+    annotation_phredticks(sides = "lr", scaled = FALSE) +
+    facet_grid(metric ~ Technology) +
+    theme_bw() +
+    theme(legend.position = "none",
+          axis.text.x = element_text(angle = -45, hjust = 0)) + 
+    labs(x = "INDEL Size Bin (bp)",
+         y = "Metric %") + 
+    scale_fill_brewer(type = "qual", palette = 2) + 
+    scale_color_brewer(type = "qual", palette = 2))
+```
+```{r}
+ggsave(here("figures","indel_performance_by_size.pdf"), indel_overview_plt, 
+       width = 6, height = 8)
+ggsave(here("figures","indel_performance_by_size.png"), indel_overview_plt, 
+       width = 6, height = 8, dpi = "retina")
+```
+
+
+
+# Session Information
+## System Information
+```{r}
+sessioninfo::platform_info()
+```
+
+
+## Package Versions
+```{r}
+sessioninfo::package_info() %>% 
+    filter(attached = TRUE) %>% 
+    select(package, loadedversion, date, source) %>%
+    knitr::kable(booktabs = TRUE, row.names = FALSE)
+```

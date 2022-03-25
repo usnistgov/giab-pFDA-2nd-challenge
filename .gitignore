@@ -4,4 +4,7 @@
 .Ruserdata
 .DS_Store
 *html
-data/fq_stats/*tsv.gz
+data/submission_vcfs
+data/TruthChallengeV2
+data-raw
+scratch

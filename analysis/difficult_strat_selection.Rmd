@@ -32,7 +32,8 @@ results_df <- here("data-raw", "FinalTruthExtracted.xlsx") %>%
     ## Converting to a long data frame
     select(-Extra_Details, -Participant_File) %>% 
     gather("metric_cat","value", 
-           -Name, -Submission_Name, -HG_Num, -Technology, -Multi_Details)
+           -Name, -Submission_Name, -HG_Num, -Technology, -Multi_Details) %>% 
+    
 ```
 
 ## Tidying results for data analysis

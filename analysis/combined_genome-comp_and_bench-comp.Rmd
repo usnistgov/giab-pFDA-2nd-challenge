@@ -1,0 +1,79 @@
+---
+title: "Template"
+date: '`r Sys.Date()`'
+output: 
+    bookdown::html_document2:
+        toc: true
+        toc_float: true
+        df_print: paged
+        code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(ggpubr)
+source(here("scripts", "annotation-phredticks.R"))
+```
+
+# Combined Comparison Figure
+Loading panel figure objects
+```{r}
+bench_comp_bench_evo <- readRDS("bench_evo.RDS")
+bench_comp_caller_evo <- readRDS("caller_evo.RDS")
+genome_comp_diff_plt <- readRDS("diff_plt.RDS")
+genome_comp_error_rate <- readRDS("error_rate.RDS")
+```
+
+
+```{r}
+(combined_plt <- ggarrange(
+        ggarrange(
+        genome_comp_diff_plt ,
+        genome_comp_error_rate  + rremove("ylab"),
+        labels = c("A", "B"),
+        nrow = 1,
+        align = "h",
+        legend = "right",
+        common.legend = TRUE
+    ),
+    ggarrange(
+        bench_comp_bench_evo,
+        bench_comp_caller_evo +  ggpubr::rremove("ylab"),
+        legend = "bottom",
+        align = "h",
+        widths = c(2, 5),
+        labels = c("C", "D")
+    ),
+    nrow = 2
+)
+)
+
+```
+
+__saving plot images__
+```{r}
+ggsave(filename = here("figures","combined_comparison.pdf"), 
+      combined_plt, 
+      units = "mm", width = 174, height = 174)
+
+ggsave(filename = here("figures","combined_comparison.png"), 
+      combined_plt, 
+      units = "mm", width = 174, height = 174)
+```
+
+# Session Information
+## System Information
+```{r}
+sessioninfo::platform_info()
+```
+
+
+## Package Versions
+```{r}
+sessioninfo::package_info() %>% 
+    filter(attached = TRUE) %>% 
+    select(package, loadedversion, date, source) %>%
+    knitr::kable(booktabs = TRUE, row.names = FALSE)
+```

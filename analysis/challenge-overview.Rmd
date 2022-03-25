@@ -15,6 +15,7 @@ library(tidyverse)
 library(here)
 library(knitr)
 library(ggpubr)
+source(here("scripts", "annotation-phredticks.R"))
 ```
 
 # Participant Breakdown
@@ -29,56 +30,42 @@ metadata_df <- read_tsv(here("data-raw","anonymized_metadata_table.tsv"))
 ```
 
 
+
 ```{r}
-## Summary figure with submission breakdown
-tech_count <- metadata_df %>% 
-    mutate(Technology = case_when(Technology == "ILLUMINA" ~ "ILL",
-                                  Technology == "PACBIO" ~ "PB",
-                                  Technology == "ONT" ~ "ONT",
-                                  Multi_Details == "ILLUMINAPACBIO" ~ "ILL & PB",
-                                  Multi_Details == "ILLUMINAPACBIOONT" ~ "ILL, PB, & ONT",
-                                  Multi_Details == "PACBIOONT" ~ "PB & ONT",
-                                  TRUE ~ "Error"),
-           Technology = factor(Technology, 
-                               levels = c("PB & ONT", "ONT", "ILL, PB, & ONT",
-                                          "ILL & PB", "PB", "ILL"))
-           ) %>% 
-    ggplot() + 
-    geom_bar(aes(x = Technology)) + 
-    theme_bw() + 
-    labs(x = "Sequencing Technology", y = "# of Submissions") + 
-    coord_flip()
-
-caller_cat <- metadata_df %>% 
-    mutate(Technology = case_when(Technology == "ILLUMINA" ~ "ILL",
-                                  Technology == "PACBIO" ~ "PB",
-                                  Technology == "ONT" ~ "ONT",
-                                  Multi_Details == "ILLUMINAPACBIO" ~ "ILL & PB",
-                                  Multi_Details == "ILLUMINAPACBIOONT" ~ "ILL, PB, & ONT",
-                                  Multi_Details == "PACBIOONT" ~ "PB & ONT",
-                                  TRUE ~ "Error"),
-           Technology = factor(Technology, 
-                               levels = c("PB & ONT", "ONT", "ILL, PB, & ONT",
-                                          "ILL & PB", "PB", "ILL")),
-           caller_cat = factor(caller_cat, levels = c("Graph", "Stat", "ML"))
-           ) %>% 
-    ggplot() + 
-        geom_bar(aes(x = Technology, fill = caller_cat), position = "fill") +
-    scale_fill_brewer(type = "qual", palette = 3) + 
-    theme_bw() + 
-    labs(x = "Sequencing Technology", 
-         y = "Fraction of Submissions",
-         fill = "Variant Caller\nCategory") + 
-    coord_flip()
-
-submission_summary_plt <- ggarrange(
-    tech_count,
-    caller_cat + rremove("ylab") + rremove("y.text"),
-    labels = "AUTO",label.x = c(0.2,-0.025),
-    nrow = 1,
-    align = "h"
-)
-
+(submission_summary_plt <- metadata_df %>%
+    filter(methods_provided == "Y") %>%
+    mutate(
+        Technology = case_when(
+            Technology == "ILLUMINA" ~ "ILL",
+            Technology == "PACBIO" ~ "PB",
+            Technology == "ONT" ~ "ONT",
+            Multi_Details == "ILLUMINAPACBIO" ~ "ILL & PB",
+            Multi_Details == "ILLUMINAPACBIOONT" ~ "ILL, PB, & ONT",
+            Multi_Details == "PACBIOONT" ~ "PB & ONT",
+            TRUE ~ "Error"
+        ),
+        Technology = factor(
+            Technology,
+            levels = c("PB & ONT", "ONT", "ILL, PB, & ONT",
+                       "ILL & PB", "PB", "ILL")
+        ),
+        caller_cat = factor(caller_cat,
+                            levels = c("non-deep learning", "deep learning"))
+    ) %>%
+    ggplot() +
+    geom_bar(aes(x = Technology, fill = caller_cat)) +
+    theme_bw() +
+    scale_fill_brewer(type = "qual", palette = 3) +
+    scale_y_continuous(minor_breaks = seq(0, 25, 1)) +
+    labs(x = "Sequencing Technology",
+         y = "# of Submissions",
+         fill = "Variant Caller\nCategory") +
+    theme(legend.position = c(0.6,0.20),
+          legend.direction = "vertical",
+          legend.background = element_blank()) +
+    coord_flip() #+ 
+     # guides(fill = guide_legend(title.position = "left"))
+ )
 ```
 
 
@@ -103,23 +90,69 @@ For single technology submission Illumina was most common (24 out of 44), follow
 Number of submissions using ML and non-ML methods
 ```{r}
 metadata_df %>% 
-    count(caller_cat)
+    count(Technology, caller_cat, methods_provided)
 ```
 
-```{r}
-submission_summary_plt
-```
-
-
+## Challenge F1 Results Figure
 
 ```{r fig.cap = 'Overall performance (A) and submission rank (B) varied by technology and stratification (log scale). Generally, submissions that used multiple technologies (MULTI) outperformed single technology submissions for all three genomic context categories. Panel A shows a Histogram of F1 % (higher is better) for the three genomic stratifications evaluated. Submission counts across technologies are indicated by light grey bars and individual technologies by colored bars. Panel B shows individual submission performance. Data points represent submission performance for the three stratifications (difficult-to-map regions, all benchmark regions, MHC), and lines connect submissions. Category top performers are indicated by diamonds with "W”s.' }
 ## Figure from challenge-results.Rmd
-include_graphics(here("figures","challenge_results.png"))
+f1_dist_plot <- readRDS("f1_dist_plot.RDS")
+f1_trend_plot <- readRDS("f1_trend_plot.RDS")
+(f1_combined_plt <- ggpubr::ggarrange(f1_dist_plot, f1_trend_plot, nrow = 2,
+                  common.legend = TRUE, 
+                  legend = "bottom", labels = "AUTO"))
+```
+## Combined Submission Breakdown and Challenge Results
+
+```{r}
+f1_trend_plt <- f1_trend_plot + theme(legend.position = "bottom") + 
+    guides(fill = ggplot2::guide_legend(nrow = 2))
+```
+
+```{r}
+
+(
+    combined_plt <- ggpubr::ggarrange(
+        ggpubr::ggarrange(
+            submission_summary_plt,
+            f1_dist_plot  + rremove("legend"),
+            nrow = 2,
+            heights = c(1, 2),
+            labels = "AUTO"
+        ),
+        f1_trend_plt,
+        labels = c("", "C"),
+        ncol = 2
+    )
+)
+
+```
+
+
+## Saving Figures
+```{r}
+ggsave(
+    here("figures", "challenge_overview.pdf"),
+    combined_plt,
+    units = "mm",
+    width = 174,
+    height = 232
+)
+
+ggsave(
+    here("figures", "challenge_overview.png"),
+    combined_plt,
+    units = "mm",
+    width = 174,
+    height = 232
+)
 ```
 
 
 
-Submission results summary - wait for final list of submissions that we are including in the .
+## Submission results summary 
+- wait for final list of submissions that we are including in the .
 ```{r}
 submission_df %>%
     select(`Participant(s)`, Technology, Multi_Details) %>%
@@ -129,14 +162,6 @@ submission_df %>%
     kable( caption = "Number of submissions by technology or combination of technologies.")
 ```
 
-# Saving Figures
-```{r}
-ggsave(here("figures","submission_breakdown.pdf"), submission_summary_plt,
-       width = 6, height = 3)
-
-ggsave(here("figures","submission_breakdown.png"), submission_summary_plt,
-       width = 6, height = 3)
-```
 
 
 # Session Information

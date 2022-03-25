@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(ggpubr)
+source(here("scripts", "annotation-phredticks.R"))
 ```
 
 # Overview
@@ -30,7 +31,8 @@ metadata_df <- read_tsv(here("data-raw","anonymized_metadata_table.tsv"))
 ## Loading challenge results
 results_df <- read_tsv(here("data","anonymized_results_by_genome.tsv")) %>% 
     mutate(phred_F1 = -10*log(1-METRIC.F1_Score)/log(10)) %>% 
-    left_join(metadata_df)
+    left_join(metadata_df) %>% 
+    filter(methods_provided == "Y")
 
 ## Calculating F1 difference
 f1_diff <- results_df %>%
@@ -84,11 +86,13 @@ error_rate_scatter <- f1_diff %>%
                    color = caller_cat)) + 
     scale_y_continuous(trans='log2') + 
         scale_color_brewer(type = "qual", palette = 2) + 
-            scale_x_continuous(breaks = c(0, 10, 20, 30), 
-                       labels=c("0","90","99","99.9")) + 
+     scale_x_continuous(breaks = c(0, 10, 20, 30),
+                       labels = c("0", "90", "99", "99.9")) +
+    annotation_phredticks(sides = "b",
+                          scaled = FALSE) +
     theme_bw() + 
     theme(legend.position = "right", legend.box = "vertical") + 
-    labs(x = "F1 % (log)", y = "Error Rate Ratio (Parents/HG002)",
+    labs(x = "F1 %", y = "Error Rate Ratio (Parents/HG002)",
          color = "Variant Caller\nCategory",
          shape = "Technology")
 
@@ -98,8 +102,18 @@ error_rate_scatter <- f1_diff %>%
                            nrow = 1, align = "h", 
                            legend = "bottom", common.legend = TRUE))
 ```
+```{r}
+f1_diff %>%  
+    mutate(phred_F1 = -10*log(1-parents_F1)/log(10)) %>%
+    filter(Technology == "ILLUMINA") %>% 
+    arrange(-parents_F1)
+```
 
-
+__saving panel objects for combined plot__
+```{r}
+saveRDS(diff_loli_plt, file = "diff_plt.RDS")
+saveRDS(error_rate_scatter, file = "error_rate.RDS")
+```
 
 ```{r}
 ggsave(filename = here("figures","genome_comparison.png"), 
@@ -119,7 +133,7 @@ f1_diff %>%
 
 ```{r}
 f1_diff %>% 
-    filter(caller_cat == "ML",
+    filter(caller_cat == "deep learning",
            Type == "SNVandINDEL")
 ```
 
@@ -145,6 +159,9 @@ f1_diff %>%
               min_errr = min(error_rate_ratio),
               max_errr = max(error_rate_ratio))
     
+```
+```{r}
+f1_diff %>% arrange(parents_F1)
 ```
 
 
@@ -172,7 +189,7 @@ results_df %>%
 ```
 
 
-```{r}
+```{r eval = FALSE}
 f1_diff %>%  
     ungroup() %>% 
     mutate(ID = fct_reorder(.f = ID, .x = diff_F1, .desc = TRUE)) %>% 
@@ -195,7 +212,7 @@ f1_diff %>%
 ```
 
 
-```{r}
+```{r  eval = FALSE}
 f1_diff %>%  
     ungroup() %>% 
     mutate(ID = fct_reorder(.f = ID, .x = diff_F1, .desc = TRUE)) %>% 

@@ -1,65 +1,65 @@
-ID	Participant	Submission_Name	Technology	Multi_Details	caller_cat
-S7K7S	The Genomics Team in Google Health	DeepTrio Illumina	ILLUMINA	NA	ML
-KPXT2	The Genomics Team in Google Health	DeepTrio PacBio	PACBIO	NA	ML
-K4GT3	The Genomics Team in Google Health	DeepVariant Hybrid PacBio-Illumina	MULTI	ILLUMINAPACBIO	ML
-BSODP	The Genomics Team in Google Health	DeepVariant Illumina	ILLUMINA	NA	ML
-ES3XW	The Genomics Team in Google Health	DeepVariant Illumina (filtered for precision)	ILLUMINA	NA	ML
-B1S5A	The Genomics Team in Google Health	DeepVariant PacBio	PACBIO	NA	ML
-J04SL	The Genomics Team in Google Health	DeepVariant PacBio (filtered for precision)	PACBIO	NA	ML
-0GOOR	0GOOR	0GOOR	PACBIO	NA	Stat
-BARQS	BARQS	BARQS	ILLUMINA	NA	Stat
-KFA0T	Wasai Technology	Wasai Technology	ILLUMINA	NA	Stat
-PGXA4	TryHard	bwamem-deepvariant	ILLUMINA	NA	ML
-13678	TryHard	Winnowmap-bwamem-deepvariant	MULTI	ILLUMINAPACBIO	ML
-C6JUX	TryHard	winnowmap-deepvariant	PACBIO	NA	ML
-H9OJ3	H9OJ3	H9OJ3	ILLUMINA	NA	Stat
-SEX9X	Genomics Division at ITER	ITER (v1) - Illumina	ILLUMINA	NA	Stat
-NFT0L	Genomics Division at ITER	ITER (v2) - Illumina filtered	ILLUMINA	NA	Stat
-23O09	Genomics Division at ITER	ITER (v3) - Illumina + PacBio + ONT	MULTI	ILLUMINAPACBIOONT	Stat
-QUE7Q	Genomics Division at ITER	ITER (v4) - Illumina + PacBio + ONT filtered	MULTI	ILLUMINAPACBIOONT	Stat
-W91C1	Sentieon	Combination of Illumina and PacBio HIFI submission	MULTI	ILLUMINAPACBIO	ML
-YBE9U	Sentieon	Combination of Illumina and PacBio HIFI submission Model2	MULTI	ILLUMINAPACBIO	ML
-WX8VK	Sentieon	Combination of Illumina, PacBio HIFI, and Oxford Nanopore submission	MULTI	ILLUMINAPACBIOONT	ML
-CZA1Y	Sentieon	Combination of Illumina, PacBio HIFI, and Oxford Nanopore submission Model2	MULTI	ILLUMINAPACBIOONT	ML
-KXBR8	Sentieon	Illumina short-read-data-only submission	ILLUMINA	NA	ML
-EIUT6	Sentieon	PacBio HIFI only submission	PACBIO	NA	ML
-ASJT6	Sentieon	PacBio HIFI only submission Model2	PACBIO	NA	ML
-ISKOS	ISKOS	ISKOS	ILLUMINA	NA	Stat
-FFFGB	The UCSC CGL and Google Health	Margin-PEPPER-DeepVariant (PacBIO)	PACBIO	NA	ML
-XC97E	The UCSC CGL and Google Health	PEPPER-DeepVariant (ONT_9to6)	ONT	NA	ML
-RU88N	The UCSC CGL and Google Health	PEPPER-DeepVariant (ONT)	ONT	NA	ML
-7NJ5C	The UCSC CGL and Google Health	PEPPER-DeepVariant (PacBIO)	PACBIO	NA	ML
-CN36L	The UCSC CGL and Google Health	PEPPER-DeepVariant (PacBIO+ONT)	MULTI	PACBIOONT	ML
-8H0ZB	GENeTres	GENeTres AUTh Illumina ABD	ILLUMINA	NA	ML
-TZMTX	GENeTres	GENeTres AUTh Illumina ABMD	ILLUMINA	NA	ML
-K33QJ	GENeTres	GENeTres AUTh Illumina BBDBM	ILLUMINA	NA	ML
-NWQ6Y	GENeTres	GENeTres AUTh Illumina BBTBD	ILLUMINA	NA	ML
-TG5TE	Genetalks	Illumina-bwaalt-deepvariant(Genetalks)	ILLUMINA	NA	ML
-YGOTK	Genetalks	Illumina-Pacbio-asmMHC v1(Genetalks)	MULTI	ILLUMINAPACBIO	ML
-32LOW	Genetalks	Illumina-Pacbio-asmMHC v2(Genetalks)	MULTI	ILLUMINAPACBIO	ML
-R9CXN	Genetalks	Ilumina-bwa-dvnm(Genetalks)	ILLUMINA	NA	ML
-M9KLP	Genetalks	Ilumina-bwaalt-dvnm-gatkMHC(Genetalks)	ILLUMINA	NA	ML
-UYMUW	Genetalks	Ilumina-bwaalt-gatk(Genetalks)	ILLUMINA	NA	Stat
-2OT9Q	Genetalks	Pacbio-bwaalt-deepvariant(Genetalks)	PACBIO	NA	ML
-7RR8Z	Genetalks	Pacbio-bwaalt-dvMHC(Genetalks)	PACBIO	NA	ML
-VES2R	Genetalks	Pacbio-mm2-deepvariant(Genetalks)	PACBIO	NA	ML
-HF8CT	Genetalks	Pacbio-mm2dv-asmmhc(Genetalks)	PACBIO	NA	ML
-WGQ43	Genetalks	Pacbio-mm2SNP-bwaINDEL-asmMHC(Genetalks)	PACBIO	NA	ML
-XV7ZN	Wang Genomics Lab	ONT NanoCaller Clair Medaka Ensemble	ONT	NA	ML
-Y8QR8	Wang Genomics Lab	PacBio NanoCaller	PACBIO	NA	ML
-60Z59	Roche Sequencing Solutions	RN-Illumina	ILLUMINA	NA	ML
-JBBK0	Roche Sequencing Solutions	RN-Illumina-PacBio	MULTI	ILLUMINAPACBIO	ML
-IA789	Roche Sequencing Solutions	RN-Illumina-PacBio-ONT	MULTI	ILLUMINAPACBIOONT	ML
-9DGOR	Roche Sequencing Solutions	RN-PacBio	PACBIO	NA	ML
-YUI27	YUI27	YUI27	ILLUMINA	NA	Stat
-YJN61	Canadian Center for Computational Genomics	McGill - (C3G) submission v1	PACBIO	NA	ML
-4HL0B	Seven Bridges Genomics	Seven Bridges GRAF - Illumina	ILLUMINA	NA	Graph
-HB8P3	HB8P3	HB8P3	ILLUMINA	NA	Stat
-4GKR1	4GKR1	4GKR1	MULTI	ILLUMINAPACBIO	ML
-MECML	MECML	MECML	MULTI	ILLUMINAPACBIO	ML
-W607K	DRAGEN	DRAGEN Experimental Extension into Difficult Regions	ILLUMINA	NA	Graph
-LR1FD	Lab of Systems and Network Biology	Deepvariant_Clair_v1	MULTI	ILLUMINAPACBIO	ML
-MT57N	Lab of Systems and Network Biology	Deepvariant_Clair_v2	MULTI	ILLUMINAPACBIO	ML
-JIPSI	Lab of Systems and Network Biology	Deepvariant_Clair_v3	MULTI	ILLUMINAPACBIO	ML
-0O7FL	0O7FL	0O7FL	MULTI	ILLUMINAPACBIOONT	ML
-61YRJ	61YRJ	61YRJ	MULTI	ILLUMINAPACBIOONT	ML
+ID	Participant	Submission_Name	Technology	Multi_Details	caller_cat	methods_provided
+S7K7S	The Genomics Team in Google Health	DeepTrio Illumina	ILLUMINA	NA	deep learning	Y
+KPXT2	The Genomics Team in Google Health	DeepTrio PacBio	PACBIO	NA	deep learning	Y
+K4GT3	The Genomics Team in Google Health	DeepVariant Hybrid PacBio-Illumina	MULTI	ILLUMINAPACBIO	deep learning	Y
+BSODP	The Genomics Team in Google Health	DeepVariant Illumina	ILLUMINA	NA	deep learning	Y
+ES3XW	The Genomics Team in Google Health	DeepVariant Illumina (filtered for precision)	ILLUMINA	NA	deep learning	Y
+B1S5A	The Genomics Team in Google Health	DeepVariant PacBio	PACBIO	NA	deep learning	Y
+J04SL	The Genomics Team in Google Health	DeepVariant PacBio (filtered for precision)	PACBIO	NA	deep learning	Y
+0GOOR	0GOOR	0GOOR	PACBIO	NA	non-deep learning	N
+BARQS	BARQS	BARQS	ILLUMINA	NA	non-deep learning	N
+KFA0T	Wasai Technology	Wasai Technology	ILLUMINA	NA	non-deep learning	Y
+PGXA4	TryHard	bwamem-deepvariant	ILLUMINA	NA	deep learning	Y
+13678	TryHard	Winnowmap-bwamem-deepvariant	MULTI	ILLUMINAPACBIO	deep learning	Y
+C6JUX	TryHard	winnowmap-deepvariant	PACBIO	NA	deep learning	Y
+H9OJ3	H9OJ3	H9OJ3	ILLUMINA	NA	non-deep learning	Y
+SEX9X	Genomics Division at ITER	ITER (v1) - Illumina	ILLUMINA	NA	non-deep learning	Y
+NFT0L	Genomics Division at ITER	ITER (v2) - Illumina filtered	ILLUMINA	NA	non-deep learning	Y
+23O09	Genomics Division at ITER	ITER (v3) - Illumina + PacBio + ONT	MULTI	ILLUMINAPACBIOONT	non-deep learning	Y
+QUE7Q	Genomics Division at ITER	ITER (v4) - Illumina + PacBio + ONT filtered	MULTI	ILLUMINAPACBIOONT	non-deep learning	Y
+W91C1	Sentieon	Combination of Illumina and PacBio HIFI submission	MULTI	ILLUMINAPACBIO	non-deep learning	Y
+YBE9U	Sentieon	Combination of Illumina and PacBio HIFI submission Model2	MULTI	ILLUMINAPACBIO	non-deep learning	Y
+WX8VK	Sentieon	"Combination of Illumina, PacBio HIFI, and Oxford Nanopore submission"	MULTI	ILLUMINAPACBIOONT	non-deep learning	Y
+CZA1Y	Sentieon	"Combination of Illumina, PacBio HIFI, and Oxford Nanopore submission Model2"	MULTI	ILLUMINAPACBIOONT	non-deep learning	Y
+KXBR8	Sentieon	Illumina short-read-data-only submission	ILLUMINA	NA	non-deep learning	Y
+EIUT6	Sentieon	PacBio HIFI only submission	PACBIO	NA	non-deep learning	Y
+ASJT6	Sentieon	PacBio HIFI only submission Model2	PACBIO	NA	non-deep learning	Y
+ISKOS	ISKOS	ISKOS	ILLUMINA	NA	non-deep learning	Y
+FFFGB	The UCSC CGL and Google Health	Margin-PEPPER-DeepVariant (PacBIO)	PACBIO	NA	deep learning	Y
+XC97E	The UCSC CGL and Google Health	PEPPER-DeepVariant (ONT_9to6)	ONT	NA	deep learning	Y
+RU88N	The UCSC CGL and Google Health	PEPPER-DeepVariant (ONT)	ONT	NA	deep learning	Y
+7NJ5C	The UCSC CGL and Google Health	PEPPER-DeepVariant (PacBIO)	PACBIO	NA	deep learning	Y
+CN36L	The UCSC CGL and Google Health	PEPPER-DeepVariant (PacBIO+ONT)	MULTI	PACBIOONT	deep learning	Y
+8H0ZB	GENeTres	GENeTres AUTh Illumina ABD	ILLUMINA	NA	deep learning	Y
+TZMTX	GENeTres	GENeTres AUTh Illumina ABMD	ILLUMINA	NA	deep learning	Y
+K33QJ	GENeTres	GENeTres AUTh Illumina BBDBM	ILLUMINA	NA	deep learning	Y
+NWQ6Y	GENeTres	GENeTres AUTh Illumina BBTBD	ILLUMINA	NA	deep learning	Y
+TG5TE	Genetalks	Illumina-bwaalt-deepvariant(Genetalks)	ILLUMINA	NA	deep learning	Y
+YGOTK	Genetalks	Illumina-Pacbio-asmMHC v1(Genetalks)	MULTI	ILLUMINAPACBIO	deep learning	Y
+32LOW	Genetalks	Illumina-Pacbio-asmMHC v2(Genetalks)	MULTI	ILLUMINAPACBIO	deep learning	Y
+R9CXN	Genetalks	Ilumina-bwa-dvnm(Genetalks)	ILLUMINA	NA	deep learning	Y
+M9KLP	Genetalks	Ilumina-bwaalt-dvnm-gatkMHC(Genetalks)	ILLUMINA	NA	deep learning	Y
+UYMUW	Genetalks	Ilumina-bwaalt-gatk(Genetalks)	ILLUMINA	NA	non-deep learning	Y
+2OT9Q	Genetalks	Pacbio-bwaalt-deepvariant(Genetalks)	PACBIO	NA	deep learning	Y
+7RR8Z	Genetalks	Pacbio-bwaalt-dvMHC(Genetalks)	PACBIO	NA	deep learning	Y
+VES2R	Genetalks	Pacbio-mm2-deepvariant(Genetalks)	PACBIO	NA	deep learning	Y
+HF8CT	Genetalks	Pacbio-mm2dv-asmmhc(Genetalks)	PACBIO	NA	deep learning	Y
+WGQ43	Genetalks	Pacbio-mm2SNP-bwaINDEL-asmMHC(Genetalks)	PACBIO	NA	deep learning	Y
+XV7ZN	Wang Genomics Lab	ONT NanoCaller Clair Medaka Ensemble	ONT	NA	deep learning	Y
+Y8QR8	Wang Genomics Lab	PacBio NanoCaller	PACBIO	NA	deep learning	Y
+60Z59	Roche Sequencing Solutions	RN-Illumina	ILLUMINA	NA	deep learning	Y
+JBBK0	Roche Sequencing Solutions	RN-Illumina-PacBio	MULTI	ILLUMINAPACBIO	deep learning	Y
+IA789	Roche Sequencing Solutions	RN-Illumina-PacBio-ONT	MULTI	ILLUMINAPACBIOONT	deep learning	Y
+9DGOR	Roche Sequencing Solutions	RN-PacBio	PACBIO	NA	deep learning	Y
+YUI27	YUI27	YUI27	ILLUMINA	NA	non-deep learning	N
+YJN61	Canadian Center for Computational Genomics	McGill - (C3G) submission v1	PACBIO	NA	deep learning	Y
+4HL0B	Seven Bridges Genomics	Seven Bridges GRAF - Illumina	ILLUMINA	NA	non-deep learning	Y
+HB8P3	HB8P3	HB8P3	ILLUMINA	NA	non-deep learning	N
+4GKR1	4GKR1	4GKR1	MULTI	ILLUMINAPACBIO	deep learning	N
+MECML	MECML	MECML	MULTI	ILLUMINAPACBIO	deep learning	N
+W607K	DRAGEN	DRAGEN Experimental Extension into Difficult Regions	ILLUMINA	NA	non-deep learning	Y
+LR1FD	Lab of Systems and Network Biology	Deepvariant_Clair_v1	MULTI	ILLUMINAPACBIO	deep learning	N
+MT57N	Lab of Systems and Network Biology	Deepvariant_Clair_v2	MULTI	ILLUMINAPACBIO	deep learning	N
+JIPSI	Lab of Systems and Network Biology	Deepvariant_Clair_v3	MULTI	ILLUMINAPACBIO	deep learning	N
+0O7FL	0O7FL	0O7FL	MULTI	ILLUMINAPACBIOONT	deep learning	N
+61YRJ	61YRJ	61YRJ	MULTI	ILLUMINAPACBIOONT	deep learning	N

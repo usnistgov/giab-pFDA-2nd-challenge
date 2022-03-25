@@ -1,7 +1,6 @@
 Category	Submitter	Submission_Name	F1
 All Benchmark Regions - MULTI	Hanying Feng	Combination of Illumina, PacBio HIFI, and Oxford Nanopore submission	0.999
-All Benchmark Regions - MULTI	Mohammad Sahraeian	RN-Illumina-PacBio-ONT	0.999
-All Benchmark Regions - MULTI	Andrew Carroll	DeepVariant PacBio-Ill	0.999
+All Benchmark Regions - MULTI	Mohammad Sahraeian	RN-Illumina-PacBio-ONT	0.9989
 All Benchmark Regions - PACBIO	Andrew Carroll	DeepVariant PacBio	0.9983
 MHC - MULTI	Hanying Feng	Combination of Illumina, PacBio HIFI, and Oxford Nanopore submission	0.9979
 MHC - MULTI	Hanying Feng	Combination of Illumina, PacBio HIFI, and Oxford Nanopore submission Model2	0.9979

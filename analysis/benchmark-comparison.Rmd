@@ -15,6 +15,7 @@ library(tidyverse)
 library(here)
 library(ggpubr)
 library(readxl)
+source(here("scripts", "annotation-phredticks.R"))
 ```
 
 # Overview
@@ -159,24 +160,36 @@ top_df <- v2_results_df %>%
     group_by(challenge_cat) %>% 
     top_n(n = 1, phred_F1)
 
-(caller_evo <- combined_results_df %>% 
-    ## Adding horizontal line for overall top by strat
-    mutate(IDcat = str_c(Submission_Name, challenge_cat),
-           IDcat = fct_reorder(IDcat, phred_F1)) %>% 
-    filter(Technology == "ILLUMINA") %>% 
-    ggplot() + 
-    geom_hline(data = top_df, aes(yintercept = phred_F1)) +
-    geom_point(aes(x = IDcat, y = phred_F1, fill = Challenge), shape = 21) + 
-    facet_wrap(~challenge_cat, nrow = 1, scales = "free_x") + 
-    scale_fill_brewer(type = "qual", palette = 6) + 
-        scale_y_continuous(limits = c(0, 40), 
-                           breaks = c(0, 10, 20, 30, 40), 
-                       labels=c("0","90","99","99.9", "99.99")) + 
-    theme_bw() + 
-    theme(axis.text.x = element_blank(), 
-          legend.position = "bottom") + 
-    labs(x = "Submission", y = "F1 % (log)", fill = "Challenge Version") +
-    guides(fill = guide_legend(title.position = "top")))
+(
+    caller_evo <- combined_results_df %>%
+        ## Adding horizontal line for overall top by strat
+        mutate(
+            IDcat = str_c(Submission_Name, challenge_cat),
+            IDcat = fct_reorder(IDcat, phred_F1)
+        ) %>%
+        filter(Technology == "ILLUMINA") %>%
+        ggplot() +
+        geom_hline(data = top_df, aes(yintercept = phred_F1)) +
+        geom_point(aes(
+            x = IDcat, y = phred_F1, fill = Challenge
+        ), shape = 21) +
+        facet_wrap( ~ challenge_cat, nrow = 1, scales = "free_x") +
+        scale_fill_brewer(type = "qual", palette = 6) +
+        scale_y_continuous(
+            limits = c(0,40),
+            breaks = c(0, 10, 20, 30, 40),
+            labels = c("0", "90", "99", "99.9", "99.99")
+        ) +
+        annotation_phredticks(
+            sides = "l",
+            scaled = FALSE
+        ) +
+        theme_bw() +
+        theme(axis.text.x = element_blank(),
+              legend.position = "bottom") +
+        labs(x = "Submission", y = "F1 %", fill = "Challenge Version") +
+        guides(fill = guide_legend(title.position = "top"))
+)
 ```
 __Benchmark Version Effect__
 In addition to improvements in variant calling and sequencing the benchmark set has also improved.The challenge 1 winners performance is lower when benchmarked against the new V4.2 benchmark set compared to V3.2 benchmark set used to evaluate the first truth challenge (ADD REF. 
@@ -184,23 +197,33 @@ The V4.2 benchmark set covers XX% more of the genome than V3.2 therefore the V4.
 
 
 ```{r}
-(bench_evo <- challenge1_combined_df %>% 
-    mutate(Type = if_else(Type == "SNP", "SNV", Type),
-           Type = factor(Type, levels = c("SNV", "INDEL"))) %>% 
-ggplot() + 
-    geom_point(aes(x = Submission_Name, y = phred_F1, fill = benchmark_version), 
-               shape = 21) + 
-    theme_bw() + 
-    facet_wrap(~Type, nrow = 1) +
-    scale_fill_brewer(type = "qual", palette = 3) +
-        scale_y_continuous(limits = c(0, 40), 
-                           breaks = c(0, 10, 20, 30, 40), 
-                       labels=c("0","90","99","99.9", "99.99")) + 
-    labs(x = "Submission", y = "F1 % (log)", 
-         fill = "Benchmark Version") + 
-    theme(legend.position = "bottom",
-          axis.text.x = element_blank()) +
-    guides(fill = guide_legend(title.position = "top")))
+(
+    bench_evo <- challenge1_combined_df %>%
+        mutate(
+            Type = if_else(Type == "SNP", "SNV", Type),
+            Type = factor(Type, levels = c("SNV", "INDEL"))
+        ) %>%
+        ggplot() +
+        geom_point(
+            aes(x = Submission_Name, y = phred_F1, fill = benchmark_version),
+            shape = 21
+        ) +
+        theme_bw() +
+        facet_wrap(~ Type, nrow = 1) +
+        scale_fill_brewer(type = "qual", palette = 3) +
+        scale_y_continuous(
+            limits = c(0, 40),
+            breaks = c(0, 10, 20, 30, 40),
+            labels = c("0", "90", "99", "99.9", "99.99")
+        ) +
+        annotation_phredticks(sides = "l",
+                              scaled = FALSE) +
+        labs(x = "Submission", y = "F1 % (log)",
+             fill = "Benchmark Version") +
+        theme(legend.position = "bottom",
+              axis.text.x = element_blank()) +
+        guides(fill = guide_legend(title.position = "top"))
+)
 ```
 
 __Combining Plots__
@@ -209,6 +232,12 @@ __Combining Plots__
           legend = "bottom", align = "h", widths = c(2,5), labels = "AUTO"))
 ```
 
+
+__Saving figure objects for new combined comparison plot__
+```{r}
+saveRDS(bench_evo, file = "bench_evo.RDS")
+saveRDS(caller_evo, file = "caller_evo.RDS")
+```
 
 
 # Saving Figures

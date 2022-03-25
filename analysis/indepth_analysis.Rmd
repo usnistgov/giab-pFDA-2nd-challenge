@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(ggrepel)
+source(here("scripts", "annotation-phredticks.R"))
 ```
 
 # Objective
@@ -138,57 +139,43 @@ wide_strat_results_df %>%
 
 ```{r}
 scatter_plt_df <- wide_strat_results_df %>%
-        ## Reducing the number of plotted stratifications
-        filter(strat_group != "GCcontent",
-               strat_group != "FunctionalTechnicallyDifficultRegions",
-               strat_group != "union",
-               str_detect(strat_id, "di|tri|quadTR", negate = TRUE),
-               str_detect(strat_id, "All|notin|non", negate = TRUE)) %>% 
-    mutate(metric_diff = pepper - illdv) %>% 
-    filter(pepper != 0, illdv != 0) %>% 
-    group_by(Type, metric) %>% 
-    arrange(-metric_diff) %>% 
-    mutate(rank = 1:n(), 
-           labeled_strats = case_when(rank < 3 && metric_diff > 0 ~ strat_id, 
-                                      n() - rank < 3 ~ strat_id)) %>% 
-    mutate(metric = str_remove(metric, "METRIC."),
-           metric = if_else(metric == "F1_Score", "F1", metric)) %>% 
+    ## Reducing the number of plotted stratifications
+    filter(
+        strat_group != "GCcontent",
+        strat_group != "FunctionalTechnicallyDifficultRegions",
+        strat_group != "union",
+        str_detect(strat_id, "di|tri|quadTR", negate = TRUE),
+        str_detect(strat_id, "All|notin|non", negate = TRUE)
+    ) %>%
+    mutate(metric_diff = pepper - illdv) %>%
+    filter(pepper != 0, illdv != 0) %>%
+    group_by(Type, metric) %>%
+    arrange(-metric_diff) %>%
+    mutate(
+        rank = 1:n(),
+        labeled_strats = case_when(rank < 3 &&
+                                       metric_diff > 0 ~ strat_id,
+                                   n() - rank < 3 ~ strat_id)
+    ) %>%
+    mutate(
+        metric = str_remove(metric, "METRIC."),
+        metric = if_else(metric == "F1_Score", "F1", metric)
+    ) %>%
     mutate(Type = if_else(Type == "SNP", "SNV", Type))
-    
+
 (
     scatter_plt <- scatter_plt_df %>%
         ggplot() +
         geom_abline(aes(intercept = 0, slope = 1)) +
-        # geom_linerange(
-        #     data = filter(scatter_plt_df, Subset == "*"),
-        #     aes(
-        #         x = illdv,
-        #         ymin = 0,
-        #         ymax = pepper,
-        #     ),
-        #     linetype = 2,
-        #     show.legend = FALSE
-        # ) +
-        # geom_segment(
-    #     data = filter(scatter_plt_df, Subset == "*"),
-    #     aes(
-    #         x = 0,
-    #         xend = illdv,
-    #         y = pepper,
-    #         yend = pepper,
-    #     ),
-    #     linetype = 2,
-    #     show.legend = FALSE
-    # ) +
-    geom_point(
-        aes(
-            x = illdv,
-            y = pepper,
-            fill = strat_group,
-            label = strat_id
-        ),
-        shape = 21
-    ) +
+        geom_point(
+            aes(
+                x = illdv,
+                y = pepper,
+                fill = strat_group,
+                label = strat_id
+            ),
+            shape = 21
+        ) +
         geom_text_repel(
             point.padding = 0.25,
             aes(x = illdv,
@@ -200,8 +187,8 @@ scatter_plt_df <- wide_strat_results_df %>%
         ) +
         facet_grid(metric ~ Type) +
         theme_bw() +
-        labs(x = "ILL DeepVariant % (log)",
-             y = "ONT PEPPER-DeepVariant % (log)",
+        labs(x = "ILL DeepVariant %",
+             y = "ONT PEPPER-DeepVariant %",
              fill = "Stratification\nCategory") +
         scale_x_continuous(
             breaks = c(0, 10, 20, 30, 40),
@@ -210,21 +197,24 @@ scatter_plt_df <- wide_strat_results_df %>%
         scale_y_continuous(
             breaks = c(0, 10, 20, 30, 40),
             labels = c("0", "90", "99", "99.9", "99.99")
-        ) + 
-        scale_fill_brewer(type = "qual", palette = 3) + 
-        coord_equal() + 
-    theme(
-        strip.text.y = element_text(angle = 360),
-        legend.position = "bottom"
-    ) +
+        ) +
+        annotation_phredticks(sides = "lb",
+                              scaled = FALSE) +
+        scale_fill_brewer(type = "qual", palette = 3) +
+        coord_equal() +
+        theme(
+            strip.text.y = element_text(angle = 360),
+            legend.position = "bottom"
+        ) +
         guides(fill = guide_legend(
             title.position = "left", nrow = 2
-        )) 
+        ))
 )
 ```
 
 ```{r}
 ggsave(here("figures","indepth_analysis.png"), scatter_plt, height = 8, width = 6, dpi = "retina")
+ggsave(here("figures","indepth_analysis.pdf"), scatter_plt, height = 8, width = 6, dpi = "retina")
 ```
 ```{r}
 plotly::ggplotly(scatter_plt)
@@ -302,13 +292,13 @@ plotly::ggplotly(scatter_plt)
 )
 ```
 
-```{r}
+```{r, include = FALSE}
 ggsave(here("figures","indepth_analysis_F1_only.pdf"), scatter_plt, height = 4, width = 8, dpi = "retina")
 ```
 
 ## Exploratory Plots
 
-```{r}
+```{r, include = FALSE}
 bar_plt_df <- strat_results_df %>%
         ## Reducing the number of plotted stratifications
         filter(strat_group != "GCcontent",
@@ -345,7 +335,7 @@ __Key Points__
 
 
 Overall performance
-```{r}
+```{r, include = FALSE}
 results_df %>% filter(Subtype == "*", Subset == "*", 
                       str_detect(callset, "HG002", negate = TRUE)) %>% 
     separate(callset, into = c("caller","giab_id"), sep = "_") %>% 
@@ -359,7 +349,7 @@ results_df %>% filter(Subtype == "*", Subset == "*",
 __TODO__ Add Precision and Recall Metrics, plot combined parents  
 
 __Summary Table__
-```{r}
+```{r, include = FALSE}
 wide_callset_results_df %>% 
     mutate(diff = pepper - illdv) %>% 
     group_by(Type, Subset) %>% 
@@ -374,7 +364,7 @@ wide_callset_results_df %>%
 # Exploratory Figures
 
 
-```{r}
+```{r, include = FALSE}
 results_df %>% 
     left_join(strat_metadata_df) %>% 
     filter(strat_group != "GenomeSpecific") %>% 
@@ -384,7 +374,7 @@ results_df %>%
 
 ```
 
-```{r}
+```{r, include = FALSE}
 (
     scatter_plt <- wide_callset_results_df %>%
         ggplot() +
@@ -427,11 +417,11 @@ results_df %>%
 )
 ```
 
-```{r}
+```{r, include = FALSE}
 plotly::ggplotly(scatter_plt)
 ```
 
-```{r}
+```{r, include = FALSE}
 strat_results_df %>% 
     filter(str_detect(strat_id, "GC", negate = TRUE),
            str_detect(strat_id, "notin", negate = TRUE)) %>% 
