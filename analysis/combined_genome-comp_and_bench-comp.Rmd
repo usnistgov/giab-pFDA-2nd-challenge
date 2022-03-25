@@ -1,5 +1,5 @@
 ---
-title: "Template"
+title: "Combined Genome and Benchmark Comparison Figure"
 date: '`r Sys.Date()`'
 output: 
     bookdown::html_document2:
