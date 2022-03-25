@@ -4,7 +4,10 @@
 .Ruserdata
 .DS_Store
 *html
+*RDS
 data/submission_vcfs
 data/TruthChallengeV2
+data/coverage
+data/fq_stats
 data-raw
 scratch
