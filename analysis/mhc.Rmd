@@ -126,9 +126,6 @@ __Key points__
 
 ```{r}
 (graph_plt <- results_comp %>% 
-               mutate(labeled_subs = case_when(Submission_Name == "Seven Bridges GRAF - Illumina" ~ "SevenBridges",
-                                    str_detect(Submission_Name, "DRAGEN") ~ "DRAGEN",
-                                    TRUE ~ "")) %>% 
      mutate(alpha = if_else(labeled_subs == "", 0.25, 1)) %>% 
      mutate(Type = if_else(Type == "SNP", "SNV", Type)) %>% 
           filter(Type == "SNVandINDEL") %>% 
@@ -145,7 +142,7 @@ __Key points__
                    labels=c("0","90","99","99.9")) + 
     scale_y_continuous(breaks = c(0, 10, 20, 30), 
                    labels=c("0","90","99","99.9")) + 
-    facet_grid(Type ~ challenge_cat) + 
+    facet_grid(challenge_cat ~ Type) + 
     theme_bw() + 
     theme(legend.position = "bottom") +
      scale_alpha_continuous(range = c(0.35,1)) +
@@ -155,7 +152,7 @@ __Key points__
 ```
 
 ```{r}
-# ggsave(here("figures","mhc_graph_SNVandINDEL-only.pdf"), graph_plt, width =8, height = 4)
+ggsave(here("figures","mhc_SNVandINDEL-only.pdf"), graph_plt, width =5, height = 4.5)
 ```
 
 

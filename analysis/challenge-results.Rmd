@@ -314,6 +314,13 @@ ggsave(filename = here("figures","challenge_results_f1.png"),
 ```
 
 
+F1 trend plot only
+```{r}
+ggsave(filename = here("figures","challenge_results_f1_trend_only.pdf"), 
+       f1_trend_plot,width = 6, height = 4
+       )
+```
+
 ## Precision
 ```{r }
 ## Metric distributions by stratification ########
