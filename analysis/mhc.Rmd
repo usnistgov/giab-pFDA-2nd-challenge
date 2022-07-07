@@ -152,7 +152,7 @@ __Key points__
 ```
 
 ```{r}
-ggsave(here("figures","mhc_SNVandINDEL-only.pdf"), graph_plt, width =5, height = 4.5)
+ggsave(here("figures","mhc_SNVandINDEL-only.pdf"), graph_plt, device=cairo_pdf, width =5, height = 4.5)
 ```
 
 
